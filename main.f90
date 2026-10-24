@@ -1,0 +1,87 @@
+program main
+  use f90sockets
+  use iso_fortran_env
+
+  implicit none
+  integer :: fd, inet, port
+  character(len=100), parameter :: host = "localhost"
+
+  !  real(real64) :: x, y
+!  integer :: x, y
+  character(len=11) :: str_recv, str_send = "hello world"
+  integer :: int_recv, int_send = 5
+  real(REAL64) :: real_recv, real_send = 42
+
+  integer, parameter :: real_len = 2
+  real(REAL64), dimension(real_len) :: real_array_recv, real_array_send = 67
+
+  integer, parameter :: real_slice_len=4, real_slice_stride=2
+  real(REAL64), dimension(4) :: real_slice_recv, real_slice_send = 67
+
+  real(REAL64), parameter :: real_slice_copied = 10, real_slice_not_copied = -5
+  
+  fd = 0
+  inet = 1
+  port = 65432
+  
+  call open_socket(fd, inet, port, host)
+  write(*,*) 'connected'
+  write(*,*)
+  
+  write(*,*) 'STRING'
+  str_recv = "wrong wrong"
+  call writebuffer(fd, str_send, 11)
+  write(*,*) 'sent: ', str_send
+  call readbuffer(fd, str_recv, 11)
+  write(*,*) 'recv: ', str_recv
+  if (str_send /= str_recv) STOP 'Strings did not match!'
+  write(*,*)
+  
+  write(*,*) 'REAL64'
+  real_recv = -1
+  call writebuffer(fd, real_send)
+  write(*,*) 'sent: ', real_send
+  call readbuffer(fd, real_recv)
+  write(*,*) 'recv: ', real_recv
+  if (real_send /= real_recv) STOP 'Reals did not match'
+  write(*,*)
+ 
+  write(*,*) 'Int'
+  int_recv = -1
+  call writebuffer(fd, int_send)
+  write(*,*) 'sent: ', int_send
+  call readbuffer(fd, int_recv)
+  write(*,*) 'recv: ', int_recv
+  if (int_send /= int_recv) STOP 'Ints did not match'
+  write(*,*)
+  
+  write(*,*) 'real array'
+  real_array_recv = -1
+  call writebuffer(fd, real_array_send, real_len)
+  write(*,*) 'sent: ', real_array_send
+  call readbuffer(fd, real_array_recv, real_len)
+  write(*,*) 'recv: ', real_array_recv
+  if (any(real_array_send /= real_array_recv)) STOP 'Real arrays did not match'
+  write(*,*)
+
+  write(*,*) 'strided slice'
+  real_slice_recv = real_slice_not_copied
+  real_slice_send = real_slice_copied
+  call writebuffer(fd, real_slice_send(1::2), 2)
+  write(*,*) 'sent: ', real_slice_send(1::2)
+  call readbuffer(fd, real_slice_recv(1::2), 2)
+  write(*,*) 'expect (10): ', real_slice_recv(1::2)
+  write(*,*) 'expect (-5): ', real_slice_recv(2::2)
+  write(*,*) 'full:', real_slice_recv
+  if (any(real_slice_copied /= real_slice_recv(1::2))) STOP 'Sent elements do not match'
+  if (any(real_slice_not_copied /= real_slice_recv(2::2))) STOP 'Real slice - wrote to wrong elements'
+  write(*,*) 
+  
+  
+  call close_socket(fd)
+  write(*,*) 'closed socket'
+  
+
+  
+end program main
+
