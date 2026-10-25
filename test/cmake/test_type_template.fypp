@@ -1,0 +1,83 @@
+! -*- mode: F90 ; mode: font-lock ; column-number-mode: true ; vc-back-end: git -*-
+!
+! Template for individual type test programs.
+! Parameters passed via fypp:
+!   NAME            - string tag (e.g. 'real64', 'int32')
+!   TYPE_KW         - Fortran type keyword ('integer', 'real')
+!   KIND_VAL        - Fortran kind constant ('int32', 'real64')
+!   VAL_SCALAR      - Literal scalar value (e.g. '2.718281828459045_real64')
+!   VAL_COPIED      - Literal value for strided slice (e.g. '10.5_real64')
+!   VAL_NOT_COPIED  - Literal value for background slice (e.g. '-5.5_real64')
+!
+program test_${NAME}$
+   use tcpsockets, only : open_socket, close_socket, writebuffer, readbuffer, socket_handle
+   use iso_fortran_env
+   use arg_get_port, only: get_port
+
+   implicit none
+
+   type(socket_handle) :: fd
+   integer :: port
+   character(len=100), parameter :: host = "localhost"
+
+   ${TYPE_KW}$(${KIND_VAL}$) :: send_val, recv_val
+   ${TYPE_KW}$(${KIND_VAL}$) :: arr_send(5), arr_recv(5)
+   ${TYPE_KW}$(${KIND_VAL}$) :: slice(10)
+
+   ${TYPE_KW}$(${KIND_VAL}$), parameter :: val_copied = ${VAL_COPIED}$
+   ${TYPE_KW}$(${KIND_VAL}$), parameter :: val_not_copied = ${VAL_NOT_COPIED}$
+
+   port = get_port()
+
+   call open_socket(fd, port, host)
+   write(*, '(A)') '==> [${NAME}$] Connected to socket'
+
+   ! -------------------------------------------------------------------------
+   ! 1. Scalar Roundtrip Test
+   ! -------------------------------------------------------------------------
+   send_val = ${VAL_SCALAR}$
+   recv_val = 0_${KIND_VAL}$
+
+   call writebuffer(fd, send_val)
+   call readbuffer(fd, recv_val)
+   write(*, '(A, g0, A, g0)') '  Scalar send: ', send_val, ' | recv: ', recv_val
+
+   if (send_val /= recv_val) then
+      error stop 'test_${NAME}$: Scalar value mismatch!'
+   end if
+
+   ! -------------------------------------------------------------------------
+   ! 2. Contiguous Array Roundtrip Test
+   ! -------------------------------------------------------------------------
+   arr_send = [${VAL_SCALAR}$, val_copied, val_not_copied, ${VAL_SCALAR}$, val_copied]
+   arr_recv = 0_${KIND_VAL}$
+
+   call writebuffer(fd, arr_send, 5)
+   call readbuffer(fd, arr_recv, 5)
+   write(*, '(A)') '  Contiguous array roundtrip completed'
+
+   if (any(arr_send /= arr_recv)) then
+      error stop 'test_${NAME}$: Contiguous array mismatch!'
+   end if
+
+   ! -------------------------------------------------------------------------
+   ! 3. Strided Slice (Copy-in / Copy-out) Test
+   ! -------------------------------------------------------------------------
+   slice(1:10:2) = val_copied
+   slice(2:10:2) = val_not_copied
+   arr_recv = 0_${KIND_VAL}$
+
+   call writebuffer(fd, slice(1:10:2), 5)
+   call readbuffer(fd, arr_recv, 5)
+   write(*, '(A)') '  Strided slice roundtrip completed'
+
+   if (any(slice(1:10:2) /= arr_recv)) then
+      error stop 'test_${NAME}$: Strided slice mismatch!'
+   end if
+
+   ! -------------------------------------------------------------------------
+   ! Clean teardown
+   ! -------------------------------------------------------------------------
+   call close_socket(fd)
+
+end program

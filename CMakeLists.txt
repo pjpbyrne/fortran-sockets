@@ -1,0 +1,133 @@
+cmake_minimum_required(VERSION 3.18)
+project(f90sockets LANGUAGES C Fortran)
+include(CTest) 
+
+# Locate the fypp preprocessor executable
+find_program(FYPP_EXECUTABLE fypp REQUIRED)
+
+# ------------------------------------------------------------------------------
+# Fypp Preprocessing: generate tcpsockets.f90 from src/tcpsockets.fypp
+# ------------------------------------------------------------------------------
+set(FYPP_INPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/tcpsockets.fypp")
+set(FYPP_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/tcpsockets.f90")
+
+add_custom_command(
+    OUTPUT "${FYPP_OUTPUT}"
+    COMMAND ${FYPP_EXECUTABLE} "${FYPP_INPUT}" "${FYPP_OUTPUT}"
+    DEPENDS "${FYPP_INPUT}"
+    COMMENT "Preprocessing ${FYPP_INPUT} with Fypp"
+    VERBATIM
+)
+
+# ------------------------------------------------------------------------------
+# Target: Library containing the C socket routines and Fortran module
+# ------------------------------------------------------------------------------
+add_library(f90sockets STATIC
+    src/sockets.c
+    "${FYPP_OUTPUT}"
+)
+
+# Set the Fortran module directory and ensure consumers can find it
+set_target_properties(f90sockets PROPERTIES
+    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
+)
+target_include_directories(f90sockets PUBLIC
+    "${CMAKE_CURRENT_BINARY_DIR}/modules"
+)
+
+# ------------------------------------------------------------------------------
+# Target: Test Executable
+# ------------------------------------------------------------------------------
+#add_executable(test_full.exe
+#  test/cmake/full.f90
+#)
+#target_link_libraries(test_full.exe PRIVATE f90sockets)
+
+
+# ------------------------------------------------------------------------------
+# CTest Integration (enables 'ctest' or 'cmake --build build --target test')
+# ------------------------------------------------------------------------------
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+enable_testing()
+
+
+# Use '|' as delimiter to avoid conflicting with CMake's list separator
+set(TEST_TYPE_CONFIGS
+    "int32|integer|int32|42_int32|10_int32|-5_int32"
+    "int64|integer|int64|9876543210_int64|100_int64|-50_int64"
+    "real32|real|real32|3.1415927_real32|1.234_real32|-9.99_real32"
+    "real64|real|real64|2.718281828459045_real64|10.5_real64|-5.5_real64"
+)
+
+set(TEMPLATE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/test/cmake/test_type_template.fypp")
+
+foreach(entry IN LISTS TEST_TYPE_CONFIGS)
+    # Split by '|' into a proper CMake list
+    string(REPLACE "|" ";" config "${entry}")
+
+    list(GET config 0 T_NAME)
+    list(GET config 1 T_KW)
+    list(GET config 2 T_KIND)
+    list(GET config 3 T_SCALAR)
+    list(GET config 4 T_COPIED)
+    list(GET config 5 T_NOT_COPIED)
+
+    set(GENERATED_SRC "${CMAKE_CURRENT_BINARY_DIR}/test_${T_NAME}.f90")
+    set(TEST_TARGET "test_${T_NAME}")
+
+    add_custom_command(
+        OUTPUT "${GENERATED_SRC}"
+        COMMAND ${FYPP_EXECUTABLE}
+            -DNAME="${T_NAME}"
+            -DTYPE_KW="${T_KW}"
+            -DKIND_VAL="${T_KIND}"
+            -DVAL_SCALAR="${T_SCALAR}"
+            -DVAL_COPIED="${T_COPIED}"
+            -DVAL_NOT_COPIED="${T_NOT_COPIED}"
+            "${TEMPLATE_FILE}"
+            "${GENERATED_SRC}"
+        DEPENDS "${TEMPLATE_FILE}"
+        COMMENT "Generating ${T_NAME} test from template"
+        VERBATIM
+    )
+
+    add_executable(${TEST_TARGET}
+        "${GENERATED_SRC}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test/arg_get_port.f90"
+    )
+    target_link_libraries(${TEST_TARGET} PRIVATE f90sockets)
+
+    add_test(
+        NAME "unit_${T_NAME}"
+        COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/test/run_test.py"
+                "$<TARGET_FILE:${TEST_TARGET}>"
+    )
+endforeach()
+
+add_executable(test_string
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/cmake/test_string.f90"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/arg_get_port.f90"
+)
+target_link_libraries(test_string PRIVATE f90sockets)
+
+add_test(
+    NAME "unit_string"
+    COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/test/run_test.py"
+            "$<TARGET_FILE:test_string>"
+)
+
+add_executable(test_full
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/test_full.f90"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/arg_get_port.f90"
+)
+target_link_libraries(test_full PRIVATE f90sockets)
+
+add_test(
+    NAME "combination"
+    COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/test/run_test.py"
+            "$<TARGET_FILE:test_full>"
+)
+

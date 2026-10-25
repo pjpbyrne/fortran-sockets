@@ -1,14 +1,13 @@
 program main
-  use tcpsockets
+  use tcpsockets, only : open_socket, close_socket, writebuffer, readbuffer, socket_handle
   use iso_fortran_env
+  use arg_get_port, only: get_port
 
   implicit none
   type(socket_handle) :: fd
-  integer :: inet, port
+  integer :: port
   character(len=100), parameter :: host = "localhost"
 
-  !  real(real64) :: x, y
-!  integer :: x, y
   character(len=11) :: str_recv, str_send = "hello world"
   integer :: int_recv, int_send = 5
   real(REAL64) :: real_recv, real_send = 42
@@ -21,8 +20,7 @@ program main
 
   real(REAL64), parameter :: real_slice_copied = 10, real_slice_not_copied = -5
   
-  inet = 1
-  port = 65432
+  port = get_port()
   
   call open_socket(fd, port, host)
   write(*,*) 'connected'

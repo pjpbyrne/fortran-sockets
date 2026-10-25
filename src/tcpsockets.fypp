@@ -4,7 +4,6 @@
     ('int64',  'integer', 'int64'),  &
     ('real32', 'real',    'real32'), &
     ('real64', 'real',    'real64'), &
-    ('logical','logical', 'c_bool')  &
 ]
 module tcpsockets
    use, intrinsic :: iso_c_binding

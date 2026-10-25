@@ -10,15 +10,16 @@ FMODFLAGS := -J $(BUILD_DIR) -I $(BUILD_DIR)
 .SECONDARY: src/tcpsockets.f90
 
 test: test.exe
-	test/python-server.py &
-	sleep 1
-	./test.exe
+	test/run_test.py ./test.exe
 
-test.exe: $(BUILD_DIR)/main.o $(BUILD_DIR)/tcpsockets.o $(BUILD_DIR)/sockets.o
+test.exe: $(BUILD_DIR)/main.o $(BUILD_DIR)/arg_get_port.o $(BUILD_DIR)/tcpsockets.o $(BUILD_DIR)/sockets.o | $(BUILD_DIR)
 	gfortran -o $@ $^
 
-$(BUILD_DIR)/main.o: test/test_prog.f90 $(BUILD_DIR)/tcpsockets.o
-	gfortran ${FMODFLAGS} -c -o $@ $<	
+$(BUILD_DIR)/arg_get_port.o: test/arg_get_port.f90 | $(BUILD_DIR)
+	gfortran ${FMODFLAGS} -c -o $@ $<
+
+$(BUILD_DIR)/main.o: test/test_full.f90 $(BUILD_DIR)/arg_get_port.o $(BUILD_DIR)/tcpsockets.o | $(BUILD_DIR)
+	gfortran ${FMODFLAGS} -c -o $@ $<
 
 src/%.f90: src/%.fypp
 	fypp $< $@
