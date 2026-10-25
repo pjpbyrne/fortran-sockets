@@ -4,7 +4,7 @@
 make main.exe
 
 # Launch the python server
-./python-server.py &
+test/python-server.py &
 sleep 1
 
 # Run fortran code

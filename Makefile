@@ -3,19 +3,28 @@ all: main.exe
 
 FLAGS := -fmax-errors=5 -Wall -Wextra
 
-main.exe: main.f90 tcpsockets.o sockets.o
-	gfortran -c main.f90
-	gfortran -o main.exe main.o tcpsockets.o sockets.o
+BUILD_DIR := obj
+SRC_DIR := src
+FMODFLAGS := -J $(BUILD_DIR)
 
+$(BUILD_DIR):
+	mkdir $@
 
-tcpsockets.o: tcpsockets.f90
-	gfortran ${FLAGS} -c tcpsockets.f90
+main.exe: obj/main.o obj/tcpsockets.o obj/sockets.o
+	gfortran -o $@ $^
 
-tcpsockets.f90: tcpsockets.fypp
-	fypp tcpsockets.fypp tcpsockets.f90
+obj/main.o: test/test_prog.f90 obj/tcpsockets.o
+	gfortran ${FMODFLAGS} -c -o $@ $<	
 
-sockets.o: sockets.c
-	gcc ${FLAGS} -c sockets.c	
+src/%.f90: src/%.fypp
+	fypp $< $@
+
+obj/%.o: src/%.c $(BUILD_DIR)
+	gcc ${FLAGS} -c -o $@ $<
+
+obj/%.o: src/%.f90 $(BUILD_DIR)
+	gfortran ${FMODFLAGS} ${FLAGS} -c -o $@ $<
 
 clean:
-	rm -f *.o *.mod *~ \#*\# main.exe tcpsockets.f90
+	rm -f main.exe
+	rm -rf obj
