@@ -5,7 +5,7 @@ This is an attempt to write a reasonable wrapper for a sockets interface in fort
 ## Structure
 The sockets interface is generated using fypp for the standard fortran numeric types (real32, real64, int32, int64) and for strings. The template is in src/tcpsockets.fypp. 
 
-For your convenience, the generated code is given in the [preprocessed](preprocessed) folder. 
+For your convenience, the generated code is given in the [preprocessed](preprocessed) folder, along with an example of how to use it. 
 
 ## Testing
 For testing, this requires python and cmake. To compile the test programs and run the full test suite:
