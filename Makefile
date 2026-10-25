@@ -14,24 +14,27 @@ test: test.exe
 	sleep 1
 	./test.exe
 
-test.exe: obj/main.o obj/tcpsockets.o obj/sockets.o
+test.exe: $(BUILD_DIR)/main.o $(BUILD_DIR)/tcpsockets.o $(BUILD_DIR)/sockets.o
 	gfortran -o $@ $^
 
-obj/main.o: test/test_prog.f90 obj/tcpsockets.o
+$(BUILD_DIR)/main.o: test/test_prog.f90 $(BUILD_DIR)/tcpsockets.o
 	gfortran ${FMODFLAGS} -c -o $@ $<	
 
 src/%.f90: src/%.fypp
 	fypp $< $@
 
-obj/%.o: src/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR)
 	gcc ${FLAGS} -c -o $@ $<
 
-obj/%.o: src/%.f90 | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: src/%.f90 | $(BUILD_DIR)
 	gfortran ${FMODFLAGS} ${FLAGS} -c -o $@ $<
 
 clean:
 	rm -f *.exe
-	rm -rf obj
+	rm -rf $(BUILD_DIR)
+
+spotless: clean
+	rm -f src/tcpsockets.f90
 
 $(BUILD_DIR):
 	mkdir $@
