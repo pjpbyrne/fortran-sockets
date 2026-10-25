@@ -11,21 +11,13 @@ For your convenience, the generated code is given in the example folder.
 For testing, this requires python and cmake. To compile the test programs and run the full test suite:
 
 ```
-$ cmake -B build
--- The C compiler identification is GNU 11.4.0
--- The Fortran compiler identification is GNU 11.4.0
-...
--- Generating done
--- Build files have been written to: /home/byo/test-sockets/build
-$ cmake --build build
-[  3%] Preprocessing test-sockets/src/tcpsockets.fypp with Fypp
-Scanning dependencies of target f90sockets
-[  7%] Building Fortran object CMakeFiles/f90sockets.dir/tcpsockets.f90.o
-...
-[ 96%] Building Fortran object CMakeFiles/test_full.dir/test/test_full.f90.o
-[100%] Linking Fortran executable test_full
-[100%] Built target test_full
-$ cmake --build build -t test
+cmake -B build
+cd build
+make
+make test
+```
+You should see output similar to:
+```
 Running tests...
 Test project /home/byo/test-sockets/build
     Start 1: unit_int32
