@@ -19,7 +19,7 @@ make test
 You should see output similar to:
 ```
 Running tests...
-Test project /home/byo/test-sockets/build
+Test project fortran-sockets/build
     Start 1: unit_int32
 1/6 Test #1: unit_int32 .......................   Passed    0.52 sec
     Start 2: unit_int64
