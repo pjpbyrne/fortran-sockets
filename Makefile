@@ -1,11 +1,13 @@
 all: main.exe
 
 
-main.exe: main.f90 f90sockets.f90 csockets.c
-	gcc -c csockets.c
-	gfortran -c f90sockets.f90
+FLAGS := -fmax-errors=5 -Wall -Wextra
+
+main.exe: main.f90 tcpsockets.f90 sockets.c
+	gcc ${FLAGS} -c sockets.c
+	gfortran ${FLAGS} -c tcpsockets.f90
 	gfortran -c main.f90
-	gfortran -o main.exe main.o f90sockets.o csockets.o
+	gfortran -o main.exe main.o tcpsockets.o sockets.o
 
 
 clean:

@@ -1,9 +1,10 @@
 program main
-  use f90sockets
+  use tcpsockets
   use iso_fortran_env
 
   implicit none
-  integer :: fd, inet, port
+  type(socket_handle) :: fd
+  integer :: inet, port
   character(len=100), parameter :: host = "localhost"
 
   !  real(real64) :: x, y
@@ -20,11 +21,10 @@ program main
 
   real(REAL64), parameter :: real_slice_copied = 10, real_slice_not_copied = -5
   
-  fd = 0
   inet = 1
   port = 65432
   
-  call open_socket(fd, inet, port, host)
+  call open_socket(fd, port, host)
   write(*,*) 'connected'
   write(*,*)
   
@@ -81,7 +81,6 @@ program main
   call close_socket(fd)
   write(*,*) 'closed socket'
   
-
   
 end program main
 
