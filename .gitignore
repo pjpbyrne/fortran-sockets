@@ -2,5 +2,6 @@
 *.mod
 *.o
 *~
-#*#
-tcpsockets.f90
+\#*#
+/src/tcpsockets.f90
+/build/

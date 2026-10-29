@@ -1,12 +1,14 @@
 all: test.exe
 
 FLAGS := -fmax-errors=5 -Wall -Wextra
+# Tests compare round-tripped reals exactly on purpose
+TEST_FLAGS := $(FLAGS) -Wno-compare-reals
 
 BUILD_DIR := obj
 SRC_DIR := src
 FMODFLAGS := -J $(BUILD_DIR) -I $(BUILD_DIR)
 
-.PHONY: clean all test
+.PHONY: clean spotless all test
 .SECONDARY: src/tcpsockets.f90
 
 test: test.exe
@@ -16,10 +18,10 @@ test.exe: $(BUILD_DIR)/main.o $(BUILD_DIR)/arg_get_port.o $(BUILD_DIR)/tcpsocket
 	gfortran -o $@ $^
 
 $(BUILD_DIR)/arg_get_port.o: test/arg_get_port.f90 | $(BUILD_DIR)
-	gfortran ${FMODFLAGS} -c -o $@ $<
+	gfortran ${FMODFLAGS} ${TEST_FLAGS} -c -o $@ $<
 
 $(BUILD_DIR)/main.o: test/test_full.f90 $(BUILD_DIR)/arg_get_port.o $(BUILD_DIR)/tcpsockets.o | $(BUILD_DIR)
-	gfortran ${FMODFLAGS} -c -o $@ $<
+	gfortran ${FMODFLAGS} ${TEST_FLAGS} -c -o $@ $<
 
 src/%.f90: src/%.fypp
 	fypp $< $@
