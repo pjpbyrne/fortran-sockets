@@ -1,6 +1,6 @@
 program main
   use tcpsockets, only : open_socket, close_socket, writebuffer, readbuffer, socket_handle
-  use iso_fortran_env
+  use iso_fortran_env, only: REAL64
   use arg_get_port, only: get_port
 
   implicit none
@@ -105,6 +105,7 @@ program main
   call readbuffer(fd, big_recv, 2 * big_n)
   if (any(big_recv /= big_send)) error stop 'Large contiguous transfer did not match'
   write(*,*) 'ok,', 2 * big_n, 'values each way'
+  deallocate(big_send, big_recv)
   write(*,*)
 
   call close_socket(fd)

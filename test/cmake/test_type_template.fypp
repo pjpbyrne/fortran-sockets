@@ -11,7 +11,7 @@
 !
 program test_${NAME}$
    use tcpsockets, only : open_socket, close_socket, writebuffer, readbuffer, socket_handle
-   use iso_fortran_env
+   use iso_fortran_env, only: int32, int64, real32, real64
    use arg_get_port, only: get_port
 
    implicit none

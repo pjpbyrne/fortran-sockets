@@ -1,7 +1,7 @@
 program main
     use tcpsockets, only : open_socket, close_socket, writebuffer, readbuffer, socket_handle, socket_is_open
     use arg_get_port, only: get_port
-    use iso_fortran_env
+    use iso_fortran_env, only: int64
 
     implicit none
     type(socket_handle) :: fd
