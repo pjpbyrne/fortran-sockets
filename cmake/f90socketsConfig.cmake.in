@@ -1,0 +1,34 @@
+@PACKAGE_INIT@
+
+# The installed package provides the C socket layer as a library (f90sockets::c)
+# and the Fortran module as source. The module is compiled here, in the
+# consuming project, with that project's Fortran compiler, so there are no
+# compiler-specific .mod files to match.
+
+include("${CMAKE_CURRENT_LIST_DIR}/f90socketsTargets.cmake")
+
+set_and_check(f90sockets_FORTRAN_SOURCE "@PACKAGE_F90SOCKETS_SOURCE_DIR@/tcpsockets.f90")
+
+if(NOT TARGET f90sockets::f90sockets)
+    if(NOT CMAKE_Fortran_COMPILER_LOADED)
+        message(FATAL_ERROR
+            "f90sockets: the consuming project must enable Fortran before "
+            "find_package(f90sockets), e.g. project(<name> LANGUAGES Fortran), "
+            "because the f90sockets module is compiled with the project's own "
+            "Fortran compiler.")
+    endif()
+
+    # Compiled once per consuming project and shared by all its targets
+    add_library(f90sockets_fortran STATIC "${f90sockets_FORTRAN_SOURCE}")
+    set_target_properties(f90sockets_fortran PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/f90sockets_modules"
+    )
+    target_include_directories(f90sockets_fortran PUBLIC
+        "${CMAKE_CURRENT_BINARY_DIR}/f90sockets_modules"
+    )
+    target_link_libraries(f90sockets_fortran PUBLIC f90sockets::c)
+    add_library(f90sockets::f90sockets ALIAS f90sockets_fortran)
+endif()
+
+check_required_components(f90sockets)

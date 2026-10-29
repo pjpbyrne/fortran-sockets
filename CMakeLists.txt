@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
-project(f90sockets LANGUAGES C Fortran)
+project(f90sockets VERSION 0.1.0 LANGUAGES C Fortran)
+
+include(GNUInstallDirs)
 
 # Only register tests when this is the top-level project, not when it is
 # pulled into another build with add_subdirectory()
@@ -43,23 +45,83 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# Target: Library containing the C socket routines and Fortran module
+# Targets
+#   f90sockets_c  the C socket layer (libf90sockets): the only compiled part that
+#                 is installed, since its C ABI works with any Fortran compiler
+#   f90sockets    the Fortran module on top of it, for in-tree use (tests,
+#                 add_subdirectory/FetchContent). Installed projects compile the
+#                 module source themselves instead; see f90socketsConfig.cmake.in.
+# Static by default; -DBUILD_SHARED_LIBS=ON builds shared libraries.
 # ------------------------------------------------------------------------------
-add_library(f90sockets STATIC
-    src/sockets.c
-    "${TCPSOCKETS_SRC}"
-)
-
-# Set the Fortran module directory and ensure consumers can find it
-set_target_properties(f90sockets PROPERTIES
-    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
+add_library(f90sockets_c src/sockets.c)
+set_target_properties(f90sockets_c PROPERTIES
+    OUTPUT_NAME f90sockets
+    POSITION_INDEPENDENT_CODE ON
     C_STANDARD 11
     C_STANDARD_REQUIRED ON
     C_EXTENSIONS OFF
 )
+
+add_library(f90sockets "${TCPSOCKETS_SRC}")
+add_library(f90sockets::f90sockets ALIAS f90sockets)
+set_target_properties(f90sockets PROPERTIES
+    OUTPUT_NAME f90sockets_fortran
+    POSITION_INDEPENDENT_CODE ON
+    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
+)
 target_include_directories(f90sockets PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}/modules"
 )
+target_link_libraries(f90sockets PUBLIC f90sockets_c)
+
+# ------------------------------------------------------------------------------
+# Install: the C library, the generated Fortran source (compiled by each
+# consuming project with its own compiler, so no compiler-specific .mod files
+# are installed) and a CMake package config. Off by default when this project
+# is pulled into another build with add_subdirectory()/FetchContent.
+# ------------------------------------------------------------------------------
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+    set(F90SOCKETS_INSTALL_DEFAULT ON)
+else()
+    set(F90SOCKETS_INSTALL_DEFAULT OFF)
+endif()
+option(F90SOCKETS_INSTALL "Generate install rules for f90sockets" ${F90SOCKETS_INSTALL_DEFAULT})
+
+if(F90SOCKETS_INSTALL)
+    include(CMakePackageConfigHelpers)
+    set(F90SOCKETS_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/f90sockets")
+    set(F90SOCKETS_SOURCE_DIR "${CMAKE_INSTALL_INCLUDEDIR}/f90sockets")
+
+    install(TARGETS f90sockets_c
+        EXPORT f90socketsTargets
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    )
+    install(FILES "${TCPSOCKETS_SRC}" DESTINATION "${F90SOCKETS_SOURCE_DIR}")
+    install(EXPORT f90socketsTargets
+        NAMESPACE f90sockets::
+        DESTINATION "${F90SOCKETS_CMAKE_DIR}"
+    )
+    # Exported as f90sockets::c rather than f90sockets::f90sockets_c
+    set_target_properties(f90sockets_c PROPERTIES EXPORT_NAME c)
+
+    configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/f90socketsConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/f90socketsConfig.cmake"
+        INSTALL_DESTINATION "${F90SOCKETS_CMAKE_DIR}"
+        PATH_VARS F90SOCKETS_SOURCE_DIR
+    )
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/f90socketsConfigVersion.cmake"
+        COMPATIBILITY SameMinorVersion
+    )
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/f90socketsConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/f90socketsConfigVersion.cmake"
+        DESTINATION "${F90SOCKETS_CMAKE_DIR}"
+    )
+endif()
 
 # ------------------------------------------------------------------------------
 # CTest Integration (enables 'ctest' or 'cmake --build build --target test')
