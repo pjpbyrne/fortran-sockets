@@ -1,0 +1,10 @@
+prefix=@PC_PREFIX@
+libdir=${prefix}/@PC_LIBDIR@
+includedir=${prefix}/@PC_INCLUDEDIR@
+# The Fortran module, as source: compile it with your own Fortran compiler
+fortran_source=${includedir}/f90sockets/tcpsockets.f90
+
+Name: f90sockets
+Description: TCP sockets for Fortran (C library; compile fortran_source alongside your program)
+Version: @PC_VERSION@
+Libs: -L${libdir} -lf90sockets

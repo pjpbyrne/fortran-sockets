@@ -121,6 +121,20 @@ if(F90SOCKETS_INSTALL)
         "${CMAKE_CURRENT_BINARY_DIR}/f90socketsConfigVersion.cmake"
         DESTINATION "${F90SOCKETS_CMAKE_DIR}"
     )
+
+    # pkg-config file for non-CMake builds. Generated at install time, so that
+    # it records the real prefix even when given as `cmake --install --prefix`.
+    install(CODE "
+        set(PC_PREFIX \"\${CMAKE_INSTALL_PREFIX}\")
+        set(PC_LIBDIR \"${CMAKE_INSTALL_LIBDIR}\")
+        set(PC_INCLUDEDIR \"${CMAKE_INSTALL_INCLUDEDIR}\")
+        set(PC_VERSION \"${PROJECT_VERSION}\")
+        configure_file(\"${CMAKE_CURRENT_SOURCE_DIR}/cmake/f90sockets.pc.in\"
+                       \"${CMAKE_CURRENT_BINARY_DIR}/f90sockets.pc\" @ONLY)
+    ")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/f90sockets.pc"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+    )
 endif()
 
 # ------------------------------------------------------------------------------
