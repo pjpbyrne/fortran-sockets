@@ -36,6 +36,32 @@ jobs:
             compiler: gcc
             version: 13
             fypp: false
+          # Memory errors, undefined behaviour and Fortran bounds/argument checks
+          - name: Linux / gfortran / sanitizers + -fcheck=all
+            os: ubuntu-latest
+            compiler: gcc
+            version: 13
+            fypp: true
+            cmake_args: >-
+              -DCMAKE_C_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer -g'
+              -DCMAKE_Fortran_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer -fcheck=all -g'
+              -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          # Exercise the send/recv chunking loop, otherwise only reached above 1 GiB
+          - name: Linux / gfortran / 1000-byte send/recv chunks
+            os: ubuntu-latest
+            compiler: gcc
+            version: 13
+            fypp: true
+            cmake_args: -DCMAKE_C_FLAGS=-DF90SOCKETS_MAX_CHUNK=1000
+          # Generic resolution of the int32/int64 counts with 8-byte default integers
+          - name: Linux / gfortran / 8-byte default integers
+            os: ubuntu-latest
+            compiler: gcc
+            version: 13
+            fypp: true
+            cmake_args: -DCMAKE_Fortran_FLAGS=-fdefault-integer-8
+    env:
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1   # make UBSan failures fail the test
     steps:
       - uses: actions/checkout@v4
 
@@ -53,7 +79,7 @@ jobs:
         run: python -m pip install fypp
 
       - name: Configure
-        run: cmake -S . -B build
+        run: cmake -S . -B build ${{ matrix.cmake_args }}
 
       - name: Build
         run: cmake --build build
