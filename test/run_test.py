@@ -93,13 +93,15 @@ def main():
     fortran_exe = args[0]
     handler = wire_connection if wire else echo_connection
 
-    # 1. Bind to port 0 to let OS select an available ephemeral port
-    server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # 1. Listen on an address that "localhost" (which the tests connect to)
+    #    resolves to: IPv4 or IPv6. Port 0 lets the OS pick a free port.
+    family, _, _, _, address = socket.getaddrinfo("localhost", 0, type=socket.SOCK_STREAM)[0]
+    server_sock = socket.socket(family, socket.SOCK_STREAM)
     server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_sock.bind(("127.0.0.1", 0))
+    server_sock.bind(address)
     server_sock.listen(1)
 
-    host, port = server_sock.getsockname()
+    host, port = server_sock.getsockname()[:2]
     print(f"[Python Runner] Echo server listening on {host}:{port}")
 
     stop_event = threading.Event()
