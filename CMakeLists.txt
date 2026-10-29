@@ -237,3 +237,18 @@ foreach(entry IN LISTS ERROR_SCENARIOS)
     )
     set_tests_properties("error_${scenario}" PROPERTIES PASS_REGULAR_EXPRESSION "${message}")
 endforeach()
+
+# Close-on-exec: a child process must not keep the connection open
+add_executable(test_cloexec
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/test_cloexec.f90"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/arg_get_port.f90"
+)
+target_link_libraries(test_cloexec PRIVATE f90sockets)
+
+add_test(
+    NAME "cloexec"
+    COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/test/run_test.py"
+            --eof-check
+            "$<TARGET_FILE:test_cloexec>"
+)
