@@ -21,7 +21,8 @@ program main
 
   ! Large enough (64 MB each way) to overflow the socket buffers, so the
   ! write only completes if the peer reads while we are still writing
-  integer, parameter :: big_n = 8 * 1024 * 1024
+  ! (+ 3 so the library's 1 MiB copy chunks do not divide it exactly)
+  integer, parameter :: big_n = 8 * 1024 * 1024 + 3
   real(REAL64), allocatable :: big_send(:), big_recv(:)
   integer :: i
   

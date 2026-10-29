@@ -122,6 +122,12 @@ module tcpsockets
       end function tcp_recv_chars
    end interface
 
+   ! Non-contiguous arrays (e.g. strided sections) are sent and received through
+   ! a heap buffer of at most this many bytes. Passing them to C directly would
+   ! make the compiler copy the whole array into a temporary, which some
+   ! compilers (e.g. ifx) put on the stack, overflowing it for large arrays.
+   integer(int64), parameter :: COPY_CHUNK_BYTES = 1048576_int64   ! 1 MiB
+
    type socket_handle
       integer(kind=c_int) :: fd   = -1_c_int
    end type socket_handle
@@ -253,6 +259,8 @@ contains
       type(socket_handle), intent(in) :: sock
       integer(int64), intent(in)      :: n
       integer(kind=int32), intent(in) :: data(:)
+      integer(kind=int32), allocatable :: buf(:)
+      integer(int64) :: chunk, first, last
       integer :: status
 
       if (n == 0) return
@@ -260,8 +268,21 @@ contains
       if (size(data, kind=int64) < n) error stop "writebuffer_int32_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_int32_array: Socket not open!"
 
-      status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
-      if (status /= 0) error stop "writebuffer_int32_array: Failed sending"
+      if (is_contiguous(data)) then
+         ! Contiguous: pass straight through, no copy (C reads only n elements)
+         status = tcp_send_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+         if (status /= 0) error stop "writebuffer_int32_array: Failed sending"
+      else
+         ! Strided: copy through a heap buffer one chunk at a time
+         chunk = max(1_int64, COPY_CHUNK_BYTES / c_sizeof(data(1)))
+         allocate(buf(min(n, chunk)))
+         do first = 1, n, chunk
+            last = min(first + chunk - 1, n)
+            buf(1:last - first + 1) = data(first:last)
+            status = tcp_send_array(sock%fd, buf, c_sizeof(buf(1)) * int(last - first + 1, kind=c_size_t))
+            if (status /= 0) error stop "writebuffer_int32_array: Failed sending"
+         end do
+      end if
    end subroutine writebuffer_int32_array_n64
 
    subroutine readbuffer_int32_scalar(sock, data)
@@ -286,6 +307,8 @@ contains
       type(socket_handle), intent(in) :: sock
       integer(int64), intent(in)      :: n
       integer(kind=int32), intent(inout) :: data(:)
+      integer(kind=int32), allocatable :: buf(:)
+      integer(int64) :: chunk, first, last
       integer :: status
 
       if (n == 0) return
@@ -293,8 +316,21 @@ contains
       if (size(data, kind=int64) < n) error stop "readbuffer_int32_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_int32_array: Socket not open!"
 
-      status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
-      if (status /= 0) error stop "readbuffer_int32_array: Failed receiving"
+      if (is_contiguous(data)) then
+         ! Contiguous: receive straight into data (only the first n elements)
+         status = tcp_recv_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+         if (status /= 0) error stop "readbuffer_int32_array: Failed receiving"
+      else
+         ! Strided: receive through a heap buffer one chunk at a time
+         chunk = max(1_int64, COPY_CHUNK_BYTES / c_sizeof(data(1)))
+         allocate(buf(min(n, chunk)))
+         do first = 1, n, chunk
+            last = min(first + chunk - 1, n)
+            status = tcp_recv_array(sock%fd, buf, c_sizeof(buf(1)) * int(last - first + 1, kind=c_size_t))
+            if (status /= 0) error stop "readbuffer_int32_array: Failed receiving"
+            data(first:last) = buf(1:last - first + 1)
+         end do
+      end if
    end subroutine readbuffer_int32_array_n64
 
    subroutine writebuffer_int64_scalar(sock, data)
@@ -321,6 +357,8 @@ contains
       type(socket_handle), intent(in) :: sock
       integer(int64), intent(in)      :: n
       integer(kind=int64), intent(in) :: data(:)
+      integer(kind=int64), allocatable :: buf(:)
+      integer(int64) :: chunk, first, last
       integer :: status
 
       if (n == 0) return
@@ -328,8 +366,21 @@ contains
       if (size(data, kind=int64) < n) error stop "writebuffer_int64_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_int64_array: Socket not open!"
 
-      status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
-      if (status /= 0) error stop "writebuffer_int64_array: Failed sending"
+      if (is_contiguous(data)) then
+         ! Contiguous: pass straight through, no copy (C reads only n elements)
+         status = tcp_send_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+         if (status /= 0) error stop "writebuffer_int64_array: Failed sending"
+      else
+         ! Strided: copy through a heap buffer one chunk at a time
+         chunk = max(1_int64, COPY_CHUNK_BYTES / c_sizeof(data(1)))
+         allocate(buf(min(n, chunk)))
+         do first = 1, n, chunk
+            last = min(first + chunk - 1, n)
+            buf(1:last - first + 1) = data(first:last)
+            status = tcp_send_array(sock%fd, buf, c_sizeof(buf(1)) * int(last - first + 1, kind=c_size_t))
+            if (status /= 0) error stop "writebuffer_int64_array: Failed sending"
+         end do
+      end if
    end subroutine writebuffer_int64_array_n64
 
    subroutine readbuffer_int64_scalar(sock, data)
@@ -354,6 +405,8 @@ contains
       type(socket_handle), intent(in) :: sock
       integer(int64), intent(in)      :: n
       integer(kind=int64), intent(inout) :: data(:)
+      integer(kind=int64), allocatable :: buf(:)
+      integer(int64) :: chunk, first, last
       integer :: status
 
       if (n == 0) return
@@ -361,8 +414,21 @@ contains
       if (size(data, kind=int64) < n) error stop "readbuffer_int64_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_int64_array: Socket not open!"
 
-      status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
-      if (status /= 0) error stop "readbuffer_int64_array: Failed receiving"
+      if (is_contiguous(data)) then
+         ! Contiguous: receive straight into data (only the first n elements)
+         status = tcp_recv_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+         if (status /= 0) error stop "readbuffer_int64_array: Failed receiving"
+      else
+         ! Strided: receive through a heap buffer one chunk at a time
+         chunk = max(1_int64, COPY_CHUNK_BYTES / c_sizeof(data(1)))
+         allocate(buf(min(n, chunk)))
+         do first = 1, n, chunk
+            last = min(first + chunk - 1, n)
+            status = tcp_recv_array(sock%fd, buf, c_sizeof(buf(1)) * int(last - first + 1, kind=c_size_t))
+            if (status /= 0) error stop "readbuffer_int64_array: Failed receiving"
+            data(first:last) = buf(1:last - first + 1)
+         end do
+      end if
    end subroutine readbuffer_int64_array_n64
 
    subroutine writebuffer_real32_scalar(sock, data)
@@ -389,6 +455,8 @@ contains
       type(socket_handle), intent(in) :: sock
       integer(int64), intent(in)      :: n
       real(kind=real32), intent(in) :: data(:)
+      real(kind=real32), allocatable :: buf(:)
+      integer(int64) :: chunk, first, last
       integer :: status
 
       if (n == 0) return
@@ -396,8 +464,21 @@ contains
       if (size(data, kind=int64) < n) error stop "writebuffer_real32_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_real32_array: Socket not open!"
 
-      status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
-      if (status /= 0) error stop "writebuffer_real32_array: Failed sending"
+      if (is_contiguous(data)) then
+         ! Contiguous: pass straight through, no copy (C reads only n elements)
+         status = tcp_send_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+         if (status /= 0) error stop "writebuffer_real32_array: Failed sending"
+      else
+         ! Strided: copy through a heap buffer one chunk at a time
+         chunk = max(1_int64, COPY_CHUNK_BYTES / c_sizeof(data(1)))
+         allocate(buf(min(n, chunk)))
+         do first = 1, n, chunk
+            last = min(first + chunk - 1, n)
+            buf(1:last - first + 1) = data(first:last)
+            status = tcp_send_array(sock%fd, buf, c_sizeof(buf(1)) * int(last - first + 1, kind=c_size_t))
+            if (status /= 0) error stop "writebuffer_real32_array: Failed sending"
+         end do
+      end if
    end subroutine writebuffer_real32_array_n64
 
    subroutine readbuffer_real32_scalar(sock, data)
@@ -422,6 +503,8 @@ contains
       type(socket_handle), intent(in) :: sock
       integer(int64), intent(in)      :: n
       real(kind=real32), intent(inout) :: data(:)
+      real(kind=real32), allocatable :: buf(:)
+      integer(int64) :: chunk, first, last
       integer :: status
 
       if (n == 0) return
@@ -429,8 +512,21 @@ contains
       if (size(data, kind=int64) < n) error stop "readbuffer_real32_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_real32_array: Socket not open!"
 
-      status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
-      if (status /= 0) error stop "readbuffer_real32_array: Failed receiving"
+      if (is_contiguous(data)) then
+         ! Contiguous: receive straight into data (only the first n elements)
+         status = tcp_recv_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+         if (status /= 0) error stop "readbuffer_real32_array: Failed receiving"
+      else
+         ! Strided: receive through a heap buffer one chunk at a time
+         chunk = max(1_int64, COPY_CHUNK_BYTES / c_sizeof(data(1)))
+         allocate(buf(min(n, chunk)))
+         do first = 1, n, chunk
+            last = min(first + chunk - 1, n)
+            status = tcp_recv_array(sock%fd, buf, c_sizeof(buf(1)) * int(last - first + 1, kind=c_size_t))
+            if (status /= 0) error stop "readbuffer_real32_array: Failed receiving"
+            data(first:last) = buf(1:last - first + 1)
+         end do
+      end if
    end subroutine readbuffer_real32_array_n64
 
    subroutine writebuffer_real64_scalar(sock, data)
@@ -457,6 +553,8 @@ contains
       type(socket_handle), intent(in) :: sock
       integer(int64), intent(in)      :: n
       real(kind=real64), intent(in) :: data(:)
+      real(kind=real64), allocatable :: buf(:)
+      integer(int64) :: chunk, first, last
       integer :: status
 
       if (n == 0) return
@@ -464,8 +562,21 @@ contains
       if (size(data, kind=int64) < n) error stop "writebuffer_real64_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_real64_array: Socket not open!"
 
-      status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
-      if (status /= 0) error stop "writebuffer_real64_array: Failed sending"
+      if (is_contiguous(data)) then
+         ! Contiguous: pass straight through, no copy (C reads only n elements)
+         status = tcp_send_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+         if (status /= 0) error stop "writebuffer_real64_array: Failed sending"
+      else
+         ! Strided: copy through a heap buffer one chunk at a time
+         chunk = max(1_int64, COPY_CHUNK_BYTES / c_sizeof(data(1)))
+         allocate(buf(min(n, chunk)))
+         do first = 1, n, chunk
+            last = min(first + chunk - 1, n)
+            buf(1:last - first + 1) = data(first:last)
+            status = tcp_send_array(sock%fd, buf, c_sizeof(buf(1)) * int(last - first + 1, kind=c_size_t))
+            if (status /= 0) error stop "writebuffer_real64_array: Failed sending"
+         end do
+      end if
    end subroutine writebuffer_real64_array_n64
 
    subroutine readbuffer_real64_scalar(sock, data)
@@ -490,6 +601,8 @@ contains
       type(socket_handle), intent(in) :: sock
       integer(int64), intent(in)      :: n
       real(kind=real64), intent(inout) :: data(:)
+      real(kind=real64), allocatable :: buf(:)
+      integer(int64) :: chunk, first, last
       integer :: status
 
       if (n == 0) return
@@ -497,8 +610,21 @@ contains
       if (size(data, kind=int64) < n) error stop "readbuffer_real64_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_real64_array: Socket not open!"
 
-      status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
-      if (status /= 0) error stop "readbuffer_real64_array: Failed receiving"
+      if (is_contiguous(data)) then
+         ! Contiguous: receive straight into data (only the first n elements)
+         status = tcp_recv_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+         if (status /= 0) error stop "readbuffer_real64_array: Failed receiving"
+      else
+         ! Strided: receive through a heap buffer one chunk at a time
+         chunk = max(1_int64, COPY_CHUNK_BYTES / c_sizeof(data(1)))
+         allocate(buf(min(n, chunk)))
+         do first = 1, n, chunk
+            last = min(first + chunk - 1, n)
+            status = tcp_recv_array(sock%fd, buf, c_sizeof(buf(1)) * int(last - first + 1, kind=c_size_t))
+            if (status /= 0) error stop "readbuffer_real64_array: Failed receiving"
+            data(first:last) = buf(1:last - first + 1)
+         end do
+      end if
    end subroutine readbuffer_real64_array_n64
 
 end module tcpsockets
