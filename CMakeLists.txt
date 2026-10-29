@@ -30,6 +30,9 @@ add_library(f90sockets STATIC
 # Set the Fortran module directory and ensure consumers can find it
 set_target_properties(f90sockets PROPERTIES
     Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules"
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+    C_EXTENSIONS OFF
 )
 target_include_directories(f90sockets PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}/modules"

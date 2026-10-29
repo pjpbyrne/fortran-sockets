@@ -1,11 +1,19 @@
+#define _POSIX_C_SOURCE 200809L   /* getaddrinfo, MSG_NOSIGNAL (POSIX.1-2008) */
+#define _DARWIN_C_SOURCE          /* macOS: keep SO_NOSIGPIPE visible */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <netdb.h>
 #include <errno.h>
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0   /* e.g. macOS: SIGPIPE suppressed via SO_NOSIGPIPE instead */
+#endif
 
 /**
  * Connects to a remote TCP host.
@@ -43,6 +51,15 @@ int tcp_connect(const char *host, int port) {
         if (sockfd == -1) {
             continue;
         }
+
+#ifdef SO_NOSIGPIPE
+        int one = 1;
+        if (setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one)) == -1) {
+            close(sockfd);
+            sockfd = -1;
+            continue;
+        }
+#endif
 
         if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) == 0) {
             break; /* Success */
