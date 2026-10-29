@@ -11,6 +11,7 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <poll.h>
 
 #ifndef MSG_NOSIGNAL
@@ -109,8 +110,8 @@ static int connect_retry(int sockfd, const struct sockaddr *addr, socklen_t addr
  * @param nodelay  Non-zero to set TCP_NODELAY (disable Nagle's algorithm), so
  *                 small writes are sent immediately instead of being held
  *                 back until earlier data is acknowledged.
- * @return      A connected socket descriptor (with TCP keepalive enabled, see
- *              KEEPALIVE_*) on success, or -1 on failure.
+ * @return      A connected socket descriptor (close-on-exec, with TCP keepalive
+ *              enabled, see KEEPALIVE_*) on success, or -1 on failure.
  */
 int f90sockets_connect(const char *host, int port, int nodelay) {
     if (!host || port < 1 || port > 65535) {
@@ -137,10 +138,25 @@ int f90sockets_connect(const char *host, int port, int nodelay) {
     }
 
     for (rp = result; rp != NULL; rp = rp->ai_next) {
-        sockfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        /* Close-on-exec, so child processes (execute_command_line, system())
+           do not inherit the connection and keep it open after close_socket */
+        int type = rp->ai_socktype;
+#ifdef SOCK_CLOEXEC
+        type |= SOCK_CLOEXEC;   /* atomic: never inherited by child processes */
+#endif
+        sockfd = socket(rp->ai_family, type, rp->ai_protocol);
         if (sockfd == -1) {
             continue;
         }
+
+#ifndef SOCK_CLOEXEC
+        int fdflags = fcntl(sockfd, F_GETFD);
+        if (fdflags == -1 || fcntl(sockfd, F_SETFD, fdflags | FD_CLOEXEC) == -1) {
+            close(sockfd);
+            sockfd = -1;
+            continue;
+        }
+#endif
 
 #ifdef SO_NOSIGPIPE
         int one = 1;
