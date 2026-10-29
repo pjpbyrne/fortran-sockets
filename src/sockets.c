@@ -68,12 +68,9 @@ int tcp_close(int sockfd) {
         return -1;
     }
 
-    int result;
-    do {
-        result = close(sockfd);
-    } while (result == -1 && errno == EINTR);
-
-    return result;
+    /* Do not retry on EINTR: on Linux the descriptor is already released,
+       and retrying could close a descriptor reused by another thread. */
+    return close(sockfd);
 }
 
 /**

@@ -32,7 +32,7 @@ program main
   write(*,*) 'sent: ', str_send
   call readbuffer(fd, str_recv, 11)
   write(*,*) 'recv: ', str_recv
-  if (str_send /= str_recv) STOP 'Strings did not match!'
+  if (str_send /= str_recv) error stop 'Strings did not match!'
   write(*,*)
   
   write(*,*) 'REAL64'
@@ -41,7 +41,7 @@ program main
   write(*,*) 'sent: ', real_send
   call readbuffer(fd, real_recv)
   write(*,*) 'recv: ', real_recv
-  if (real_send /= real_recv) STOP 'Reals did not match'
+  if (real_send /= real_recv) error stop 'Reals did not match'
   write(*,*)
  
   write(*,*) 'Int'
@@ -50,7 +50,7 @@ program main
   write(*,*) 'sent: ', int_send
   call readbuffer(fd, int_recv)
   write(*,*) 'recv: ', int_recv
-  if (int_send /= int_recv) STOP 'Ints did not match'
+  if (int_send /= int_recv) error stop 'Ints did not match'
   write(*,*)
   
   write(*,*) 'real array'
@@ -59,7 +59,7 @@ program main
   write(*,*) 'sent: ', real_array_send
   call readbuffer(fd, real_array_recv, real_len)
   write(*,*) 'recv: ', real_array_recv
-  if (any(real_array_send /= real_array_recv)) STOP 'Real arrays did not match'
+  if (any(real_array_send /= real_array_recv)) error stop 'Real arrays did not match'
   write(*,*)
 
   write(*,*) 'strided slice'
@@ -71,8 +71,8 @@ program main
   write(*,*) 'expect (10): ', real_slice_recv(1::2)
   write(*,*) 'expect (-5): ', real_slice_recv(2::2)
   write(*,*) 'full:', real_slice_recv
-  if (any(real_slice_copied /= real_slice_recv(1::2))) STOP 'Sent elements do not match'
-  if (any(real_slice_not_copied /= real_slice_recv(2::2))) STOP 'Real slice - wrote to wrong elements'
+  if (any(real_slice_copied /= real_slice_recv(1::2))) error stop 'Sent elements do not match'
+  if (any(real_slice_not_copied /= real_slice_recv(2::2))) error stop 'Real slice - wrote to wrong elements'
   write(*,*) 
   
   

@@ -8,13 +8,13 @@ This file contains the underlying c code that directly deals with reading and wr
 ## tcpsockets.f90
 This is are the interfaces that you should call from fortran. It contains a lot of routines, one for every flavour of basic type and also for arrays of those types (except arrays of strings. An example of using these would be
 
-```
+```fortran
 type(socket_handle) :: socket
 character(len=100)  :: return_data
 
-call open_socket(socket, 'google.com', 80)
-call writebuffer(socket, 'hello')
-call readbuffer(socket, return_data)
+call open_socket(socket, 8080, 'localhost')
+call writebuffer(socket, 'hello', 5)
+call readbuffer(socket, return_data, 5)   ! reads exactly 5 bytes; rest blank-padded
 call close_socket(socket)
 ```
 
