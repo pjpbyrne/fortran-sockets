@@ -128,7 +128,7 @@ contains
       integer, intent(in)              :: port
       character(len=*), intent(in)     :: host
       logical, intent(in), optional    :: nodelay
-      character(kind=c_char, len=len_trim(host) + 1) :: c_host
+      character(kind=c_char, len=len_trim(adjustl(host)) + 1) :: c_host
       integer(c_int) :: c_nodelay
 
       if (sock%fd >= 0) error stop "open_socket: Socket already open!"
@@ -136,7 +136,7 @@ contains
       if (present(nodelay)) then
          if (.not. nodelay) c_nodelay = 0_c_int
       end if
-      c_host = trim(host) // c_null_char
+      c_host = trim(adjustl(host)) // c_null_char
       sock%fd = tcp_connect(c_host, int(port, kind=c_int), c_nodelay)
       if (sock%fd < 0) error stop "open_socket: Failed to open tcp connection."
    end subroutine open_socket

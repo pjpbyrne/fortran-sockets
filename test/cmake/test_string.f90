@@ -43,7 +43,8 @@ program main
     write(*,*) 'closed socket'
 
     write(*,*) 'NAGLE ENABLED (nodelay=.false.)'
-    call open_socket(fd, port, host, nodelay=.false.)
+    ! Leading blanks in the host name must be ignored, like trailing ones
+    call open_socket(fd, port, '  ' // trim(host), nodelay=.false.)
     str_recv = "wrong wrong"
     call writebuffer(fd, str_send, 11)
     call readbuffer(fd, str_recv, 11)
