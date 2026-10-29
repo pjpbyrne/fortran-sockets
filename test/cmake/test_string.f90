@@ -32,6 +32,13 @@ program main
     if (str_recv /= "hello" .or. str_recv(6:) /= repeat(' ', 6)) ERROR STOP 'Partial string not blank-padded!'
     write(*,*)
 
+    write(*,*) 'EMPTY STRING'
+    str_recv = "wrong wrong"
+    call readbuffer(fd, str_recv, 0)
+    write(*,*) 'recv: "', str_recv, '"'
+    if (str_recv /= repeat(' ', 11)) ERROR STOP 'Zero-length read did not blank the string!'
+    write(*,*)
+
     call close_socket(fd)
     write(*,*) 'closed socket'
 

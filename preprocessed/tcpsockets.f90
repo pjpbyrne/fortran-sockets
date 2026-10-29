@@ -177,7 +177,10 @@ contains
       integer, intent(in)             :: n
       integer :: status
 
-      if (n == 0) return
+      if (n == 0) then
+         fstring = ' '   ! nothing read: the whole string is padding
+         return
+      end if
       if (n < 0) error stop "readbuffer_string: Negative sized transfer"
       if (n > len(fstring)) error stop "readbuffer_string: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_string: Socket not open!"
