@@ -21,3 +21,50 @@ call close_socket(socket)
 A handle must be closed with `close_socket` before it is reused; calling `open_socket` on a handle that is still open stops the program.
 
 The file descriptors are wrapped in a simple type as they are of type c_int and there are no guarantees that fortran integers are big enough to hold them. 
+
+## Wire format
+Values are sent as their raw in-memory bytes, with no length prefix or other framing:
+
+- **Byte order** is the host's native order. On all mainstream platforms (x86-64, ARM, RISC-V, POWER little-endian) this is little-endian. Both ends must use the same byte order.
+- **Reals** are IEEE 754; **integers** are two's complement, with the exact width of their kind.
+- **Strings** are raw bytes with no terminator. `readbuffer` pads any unused part of the receiving string with blanks, not NULs.
+
+`readbuffer` blocks until exactly `n` values have arrived, so both ends must agree in advance on the order and size of every message.
+
+## Talking to Python
+Decode with explicit little-endian formats. Use `<` (or `=` for native), never `!`, which means big-endian network order:
+
+| Fortran  | `struct` | numpy   |
+|----------|----------|---------|
+| `int32`  | `'<i'`   | `'<i4'` |
+| `int64`  | `'<q'`   | `'<i8'` |
+| `real32` | `'<f'`   | `'<f4'` |
+| `real64` | `'<d'`   | `'<f8'` |
+
+Strings arrive as bytes: use `data.decode('ascii').rstrip()` to drop Fortran's blank padding.
+
+TCP is a byte stream, so a Python receiver gets data in arbitrary chunks and must buffer until a whole message has arrived. With [Twisted](https://twisted.org/), a simple way is to send an `int32` byte count before each message and use `Int32StringReceiver`. Its default prefix is big-endian, so override `structFormat`:
+
+```python
+from twisted.protocols.basic import Int32StringReceiver
+import numpy as np
+
+class FortranProtocol(Int32StringReceiver):
+    structFormat = "<i"          # Fortran int32, little-endian (default "!I" is big-endian)
+
+    def stringReceived(self, data):
+        values = np.frombuffer(data, dtype="<f8")
+        reply = (values * 2).astype("<f8").tobytes()
+        self.sendString(reply)   # sends <i length prefix + payload
+```
+
+```fortran
+integer(int32) :: nbytes
+
+call writebuffer(sock, int(8*n, int32))   ! length prefix in bytes
+call writebuffer(sock, x, n)              ! x is real(real64)
+call readbuffer(sock, nbytes)             ! int32 prefix from Twisted
+call readbuffer(sock, y, nbytes/8)
+```
+
+The Fortran side can only connect, so the Python side must be the server. If the server closes the connection while Fortran is waiting for data, the Fortran program stops with an error.
