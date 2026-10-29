@@ -15,7 +15,6 @@ program main
   integer, parameter :: real_len = 2
   real(REAL64), dimension(real_len) :: real_array_recv, real_array_send = 67
 
-  integer, parameter :: real_slice_len=4, real_slice_stride=2
   real(REAL64), dimension(4) :: real_slice_recv, real_slice_send = 67
 
   real(REAL64), parameter :: real_slice_copied = 10, real_slice_not_copied = -5
