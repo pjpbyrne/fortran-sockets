@@ -15,9 +15,45 @@ For your convenience, the generated code is given in the [preprocessed](preproce
 - A Fortran compiler supporting the Fortran 2018 features the module uses, `implicit none (type, external)` and assumed-type `type(*)` arguments. It is tested with gfortran.
 
 ## Building
-CMake builds the `f90sockets` static library. [fypp](https://github.com/aradi/fypp) is optional: if it is not installed (or does not run), the library is built from `preprocessed/tcpsockets.f90` instead of the template. To build only the library, without the tests or Python, pass `-DBUILD_TESTING=OFF`.
+CMake builds the library: the C socket layer (`libf90sockets`) and the Fortran module on top of it. It is static by default; pass `-DBUILD_SHARED_LIBS=ON` for a shared library. [fypp](https://github.com/aradi/fypp) is optional: if it is not installed (or does not run), the module is built from `preprocessed/tcpsockets.f90` instead of the template. To build only the library, without the tests or Python, pass `-DBUILD_TESTING=OFF`.
 
-The project can also be pulled into another CMake build with `add_subdirectory()` and linked against `f90sockets`; its tests are not registered in that case.
+## Installing and using the library
+```
+cmake -S . -B build -DBUILD_TESTING=OFF
+cmake --build build
+cmake --install build --prefix /path/to/prefix
+```
+This installs the compiled C library and the Fortran module **as source**, not as a compiled `.mod` file:
+```
+lib/libf90sockets.a                 (or .so / .dylib)
+include/f90sockets/tcpsockets.f90
+lib/cmake/f90sockets/               CMake package files
+lib/pkgconfig/f90sockets.pc
+```
+`.mod` files only work with the compiler (and version) that wrote them, so the module is compiled by each project that uses it, with that project's own Fortran compiler. One installation therefore works with any Fortran compiler, while the C library underneath has a stable C interface.
+
+**CMake projects** find it with `find_package` (pointing `CMAKE_PREFIX_PATH` at the prefix if it is not a system location). The project must enable Fortran; the module is compiled once and shared by all of its targets:
+```cmake
+project(myapp LANGUAGES Fortran)
+find_package(f90sockets 0.1 REQUIRED)
+add_executable(myapp main.f90)
+target_link_libraries(myapp PRIVATE f90sockets::f90sockets)
+```
+
+**Without installing**, a CMake project can include the source tree directly, with `add_subdirectory()` or FetchContent, and link the same `f90sockets::f90sockets` target. The tests and install rules are skipped in that case (set `F90SOCKETS_INSTALL=ON` to keep the install rules).
+```cmake
+include(FetchContent)
+FetchContent_Declare(f90sockets GIT_REPOSITORY https://github.com/pjpbyrne/fortran-sockets.git GIT_TAG main)
+FetchContent_MakeAvailable(f90sockets)
+target_link_libraries(myapp PRIVATE f90sockets::f90sockets)
+```
+
+**Other build systems** can use pkg-config: compile the installed module source together with your program and link the library, e.g. in a Makefile:
+```make
+F90SOCKETS_SRC := $(shell pkg-config --variable=fortran_source f90sockets)
+myapp: main.f90
+	$(FC) $(F90SOCKETS_SRC) main.f90 $(shell pkg-config --libs f90sockets) -o $@
+```
 
 ## Testing
 For testing, this requires python and cmake. The `preprocessed_*_in_sync` tests check that the files in `preprocessed/` match `src/`; after changing the sources, regenerate them with `fypp src/tcpsockets.fypp preprocessed/tcpsockets.f90` and `cp src/sockets.c preprocessed/`. Without fypp, the per-type tests (`unit_int32` to `unit_real64`) and the Fortran sync check are skipped. To compile the test programs and run the full test suite:
@@ -32,48 +68,50 @@ You should see output similar to:
 ```
 Running tests...
 Test project fortran-sockets/build
-      Start  1: preprocessed_c_in_sync
- 1/20 Test  #1: preprocessed_c_in_sync ...........   Passed    0.01 sec
-      Start  2: preprocessed_f90_in_sync
- 2/20 Test  #2: preprocessed_f90_in_sync .........   Passed    0.01 sec
-      Start  3: unit_int32
- 3/20 Test  #3: unit_int32 .......................   Passed    0.54 sec
-      Start  4: unit_int64
- 4/20 Test  #4: unit_int64 .......................   Passed    0.54 sec
-      Start  5: unit_real32
- 5/20 Test  #5: unit_real32 ......................   Passed    0.54 sec
-      Start  6: unit_real64
- 6/20 Test  #6: unit_real64 ......................   Passed    0.54 sec
-      Start  7: unit_string
- 7/20 Test  #7: unit_string ......................   Passed    0.54 sec
-      Start  8: combination
- 8/20 Test  #8: combination ......................   Passed    0.68 sec
-      Start  9: sockopts
- 9/20 Test  #9: sockopts .........................   Passed    0.03 sec
-      Start 10: wire_format
-10/20 Test #10: wire_format ......................   Passed    0.54 sec
-      Start 11: error_refused
-11/20 Test #11: error_refused ....................   Passed    0.09 sec
-      Start 12: error_send_to_closed
-12/20 Test #12: error_send_to_closed .............   Passed    0.53 sec
-      Start 13: error_recv_from_closed
-13/20 Test #13: error_recv_from_closed ...........   Passed    0.55 sec
-      Start 14: error_negative_n
-14/20 Test #14: error_negative_n .................   Passed    0.60 sec
-      Start 15: error_buffer_too_small
-15/20 Test #15: error_buffer_too_small ...........   Passed    0.60 sec
-      Start 16: error_string_too_small
-16/20 Test #16: error_string_too_small ...........   Passed    0.61 sec
-      Start 17: error_already_open
-17/20 Test #17: error_already_open ...............   Passed    0.60 sec
-      Start 18: error_close_unopened
-18/20 Test #18: error_close_unopened .............   Passed    0.54 sec
-      Start 19: error_write_unopened
-19/20 Test #19: error_write_unopened .............   Passed    0.54 sec
-      Start 20: cloexec
-20/20 Test #20: cloexec ..........................   Passed    0.54 sec
+      Start  1: install_and_consume
+ 1/21 Test  #1: install_and_consume ..............   Passed    1.43 sec
+      Start  2: preprocessed_c_in_sync
+ 2/21 Test  #2: preprocessed_c_in_sync ...........   Passed    0.00 sec
+      Start  3: preprocessed_f90_in_sync
+ 3/21 Test  #3: preprocessed_f90_in_sync .........   Passed    0.00 sec
+      Start  4: unit_int32
+ 4/21 Test  #4: unit_int32 .......................   Passed    0.53 sec
+      Start  5: unit_int64
+ 5/21 Test  #5: unit_int64 .......................   Passed    0.54 sec
+      Start  6: unit_real32
+ 6/21 Test  #6: unit_real32 ......................   Passed    0.54 sec
+      Start  7: unit_real64
+ 7/21 Test  #7: unit_real64 ......................   Passed    0.54 sec
+      Start  8: unit_string
+ 8/21 Test  #8: unit_string ......................   Passed    0.54 sec
+      Start  9: combination
+ 9/21 Test  #9: combination ......................   Passed    0.80 sec
+      Start 10: sockopts
+10/21 Test #10: sockopts .........................   Passed    0.05 sec
+      Start 11: wire_format
+11/21 Test #11: wire_format ......................   Passed    0.53 sec
+      Start 12: error_refused
+12/21 Test #12: error_refused ....................   Passed    0.10 sec
+      Start 13: error_send_to_closed
+13/21 Test #13: error_send_to_closed .............   Passed    0.54 sec
+      Start 14: error_recv_from_closed
+14/21 Test #14: error_recv_from_closed ...........   Passed    0.54 sec
+      Start 15: error_negative_n
+15/21 Test #15: error_negative_n .................   Passed    0.61 sec
+      Start 16: error_buffer_too_small
+16/21 Test #16: error_buffer_too_small ...........   Passed    0.60 sec
+      Start 17: error_string_too_small
+17/21 Test #17: error_string_too_small ...........   Passed    0.60 sec
+      Start 18: error_already_open
+18/21 Test #18: error_already_open ...............   Passed    0.60 sec
+      Start 19: error_close_unopened
+19/21 Test #19: error_close_unopened .............   Passed    0.54 sec
+      Start 20: error_write_unopened
+20/21 Test #20: error_write_unopened .............   Passed    0.55 sec
+      Start 21: cloexec
+21/21 Test #21: cloexec ..........................   Passed    0.54 sec
 
-100% tests passed, 0 tests failed out of 20
+100% tests passed, 0 tests failed out of 21
 
-Total Test time (real) =   9.16 sec
+Total Test time (real) =  10.75 sec
 ```
