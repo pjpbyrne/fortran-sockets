@@ -75,6 +75,20 @@ program test_${NAME}$
       error stop 'test_${NAME}$: Strided slice mismatch!'
    end if
 
+   ! Copy-out: read into a strided slice; the elements in between must be
+   ! left untouched
+   slice = val_not_copied
+   call writebuffer(fd, arr_send, 5)
+   call readbuffer(fd, slice(2:10:2), 5)
+   write(*, '(A)') '  Read into strided slice completed'
+
+   if (any(slice(2:10:2) /= arr_send)) then
+      error stop 'test_${NAME}$: Read into strided slice mismatch!'
+   end if
+   if (any(slice(1:10:2) /= val_not_copied)) then
+      error stop 'test_${NAME}$: Read into strided slice wrote to wrong elements!'
+   end if
+
    ! -------------------------------------------------------------------------
    ! 4. Partial Read (elements beyond n must be left untouched)
    ! -------------------------------------------------------------------------
