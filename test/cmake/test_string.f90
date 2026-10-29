@@ -23,7 +23,15 @@ program main
     write(*,*) 'recv: ', str_recv
     if (str_send /= str_recv) ERROR STOP 'Strings did not match!'
     write(*,*)
-    
+
+    write(*,*) 'PARTIAL STRING'
+    str_recv = "wrong wrong"
+    call writebuffer(fd, str_send, 5)
+    call readbuffer(fd, str_recv, 5)
+    write(*,*) 'recv: "', str_recv, '"'
+    if (str_recv /= "hello" .or. str_recv(6:) /= repeat(' ', 6)) ERROR STOP 'Partial string not blank-padded!'
+    write(*,*)
+
     call close_socket(fd)
     write(*,*) 'closed socket'
     

@@ -89,6 +89,24 @@ module tcpsockets
          integer(c_size_t), value, intent(in) :: len
          integer(c_int)                       :: status
       end function tcp_recv_scalar
+
+      function tcp_send_chars(sockfd, buf, len) bind(c, name="tcp_send") result(status)
+         import :: c_int, c_size_t, c_char
+         implicit none
+         integer(c_int), value, intent(in)                :: sockfd
+         character(kind=c_char), dimension(*), intent(in) :: buf
+         integer(c_size_t), value, intent(in)             :: len
+         integer(c_int)                                   :: status
+      end function tcp_send_chars
+
+      function tcp_recv_chars(sockfd, buf, len) bind(c, name="tcp_recv") result(status)
+         import :: c_int, c_size_t, c_char
+         implicit none
+         integer(c_int), value, intent(in)     :: sockfd
+         character(kind=c_char), dimension(*)  :: buf
+         integer(c_size_t), value, intent(in)  :: len
+         integer(c_int)                        :: status
+      end function tcp_recv_chars
    end interface
 
    type socket_handle
@@ -123,7 +141,7 @@ contains
    ! -------------------------------------------------------------------------
    subroutine writebuffer_string(sock, fstring, n)
       type(socket_handle), intent(in) :: sock
-      character(len=*), intent(in)    :: fstring
+      character(kind=c_char, len=*), intent(in)  :: fstring
       integer, intent(in)             :: n
       integer :: status
 
@@ -132,13 +150,13 @@ contains
       if (len(fstring) < n) error stop "writebuffer_string: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_string: Socket not open!"
 
-      status = tcp_send_array(sock%fd, fstring(1:1), int(n, kind=c_size_t))
+      status = tcp_send_chars(sock%fd, fstring, int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_string: Failed sending"
    end subroutine writebuffer_string
 
    subroutine readbuffer_string(sock, fstring, n)
       type(socket_handle), intent(in) :: sock
-      character(len=*), intent(out)   :: fstring
+      character(kind=c_char, len=*), intent(out) :: fstring
       integer, intent(in)             :: n
       integer :: status
 
@@ -147,7 +165,7 @@ contains
       if (n > len(fstring)) error stop "readbuffer_string: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_string: Socket not open!"
 
-      status = tcp_recv_array(sock%fd, fstring(1:1), int(n, kind=c_size_t))
+      status = tcp_recv_chars(sock%fd, fstring, int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_string: Failed receiving"
       if (n < len(fstring)) fstring(n + 1:) = ' '
    end subroutine readbuffer_string
