@@ -32,7 +32,11 @@
 /* TCP keepalive, always enabled: after 15 s idle, probe every 15 s and fail the
    connection after 4 unanswered probes, so a peer that vanished without closing
    is detected ~75 s after the connection goes idle (OS default: ~2 h 11 min).
-   Probes are answered by the peer's kernel, so a busy peer is not affected. */
+   Probes are answered by the peer's kernel, so a busy peer is not affected.
+   Keepalive only runs while no sent data is unacknowledged; otherwise TCP's
+   retransmission timeout applies (~15 min on Linux). TCP_USER_TIMEOUT would
+   bound that too, but is deliberately not set: it also closes connections
+   whose peer is merely busy and not reading (zero window). */
 #define KEEPALIVE_IDLE_S     15
 #define KEEPALIVE_INTERVAL_S 15
 #define KEEPALIVE_COUNT      4

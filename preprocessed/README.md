@@ -32,11 +32,13 @@ call open_socket(socket, 8080, 'localhost', nodelay=.false.)
 The peer's side matters too. If it replies with several small writes, it should also disable Nagle, or send each reply in one write.
 
 ### Dead peers and keepalive
-Every connection has TCP keepalive enabled. Once a connection has been idle for 15 s, TCP probes the peer every 15 s. After 4 unanswered probes it fails the connection, and a waiting `readbuffer` stops with an error instead of hanging forever. A peer that crashed, lost power or became unreachable is therefore detected about 75 s after the connection goes idle; the operating system defaults would take over two hours.
+Every connection has TCP keepalive enabled. Once a connection has been idle for 15 s, TCP probes the peer every 15 s. After 4 unanswered probes it fails the connection, and a waiting `readbuffer` stops with an error instead of hanging forever. A peer that crashed, lost power or became unreachable is therefore usually detected about 75 s after the connection goes idle; the operating system defaults would take over two hours.
 
 - **Busy peers are not affected.** The peer's operating system answers the probes, so a peer that is alive but computing for hours keeps the connection open.
 - **A stuck peer is not detected.** If the peer process is alive but never replies (deadlocked, say), the probes are still answered and `readbuffer` still waits.
 - **Long outages end the connection.** A network outage, or a suspended peer machine, lasting more than about 75 s while the connection is idle will end it.
+- **Unacknowledged data takes longer.** Keepalive only applies while everything sent has been acknowledged. If the peer vanishes before acknowledging the last data written to it, TCP's retransmission timeout applies instead, which is about 15 minutes on Linux. (The `TCP_USER_TIMEOUT` option could shorten this, but it would also end connections to a peer that is simply busy and not reading, so it is not used.)
+- **Platform differences.** The 15 s / 15 s / 4 timings are applied on Linux, macOS and FreeBSD. Platforms without per-connection keepalive settings, such as OpenBSD, use their system-wide defaults.
 
 The file descriptors are wrapped in a simple type as they are of type c_int and there are no guarantees that fortran integers are big enough to hold them. 
 
