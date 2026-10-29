@@ -5,3 +5,4 @@
 \#*#
 /src/tcpsockets.f90
 /build/
+__pycache__/
