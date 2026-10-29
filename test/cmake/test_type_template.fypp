@@ -76,6 +76,22 @@ program test_${NAME}$
    end if
 
    ! -------------------------------------------------------------------------
+   ! 4. Partial Read (elements beyond n must be left untouched)
+   ! -------------------------------------------------------------------------
+   arr_recv = val_not_copied
+
+   call writebuffer(fd, arr_send, 3)
+   call readbuffer(fd, arr_recv, 3)
+   write(*, '(A)') '  Partial read roundtrip completed'
+
+   if (any(arr_send(1:3) /= arr_recv(1:3))) then
+      error stop 'test_${NAME}$: Partial read mismatch!'
+   end if
+   if (any(arr_recv(4:5) /= val_not_copied)) then
+      error stop 'test_${NAME}$: Partial read modified elements beyond n!'
+   end if
+
+   ! -------------------------------------------------------------------------
    ! Clean teardown
    ! -------------------------------------------------------------------------
    call close_socket(fd)

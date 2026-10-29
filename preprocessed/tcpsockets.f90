@@ -213,7 +213,7 @@ contains
    subroutine readbuffer_int32_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
       integer, intent(in)             :: n
-      integer(kind=int32), intent(out) :: data(:)
+      integer(kind=int32), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return
@@ -263,7 +263,7 @@ contains
    subroutine readbuffer_int64_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
       integer, intent(in)             :: n
-      integer(kind=int64), intent(out) :: data(:)
+      integer(kind=int64), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return
@@ -313,7 +313,7 @@ contains
    subroutine readbuffer_real32_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
       integer, intent(in)             :: n
-      real(kind=real32), intent(out) :: data(:)
+      real(kind=real32), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return
@@ -363,7 +363,7 @@ contains
    subroutine readbuffer_real64_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
       integer, intent(in)             :: n
-      real(kind=real64), intent(out) :: data(:)
+      real(kind=real64), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return

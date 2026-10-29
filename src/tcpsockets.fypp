@@ -212,7 +212,7 @@ contains
    subroutine readbuffer_${name}$_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
       integer, intent(in)             :: n
-      ${type_kw}$(kind=${kind_val}$), intent(out) :: data(:)
+      ${type_kw}$(kind=${kind_val}$), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return
