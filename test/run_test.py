@@ -4,6 +4,10 @@ import subprocess
 import sys
 import threading
 
+# Fail a test that hangs (e.g. waiting for bytes that never arrive) instead of
+# blocking until CTest's 1500 s default timeout
+TEST_TIMEOUT_SECONDS = 60
+
 def run_echo_server(sock, stop_event):
     sock.settimeout(0.5)
     while not stop_event.is_set():
@@ -50,12 +54,17 @@ def main():
     try:
         # 2. Run the Fortran test executable, passing port as argument
         print(f"[Python Runner] Launching {fortran_exe} {port}...")
-        result = subprocess.run(
-            [fortran_exe, str(port)],
-            check=False,
-            text=True
-        )
-        test_returncode = result.returncode
+        try:
+            result = subprocess.run(
+                [fortran_exe, str(port)],
+                check=False,
+                text=True,
+                timeout=TEST_TIMEOUT_SECONDS
+            )
+            test_returncode = result.returncode
+        except subprocess.TimeoutExpired:
+            print(f"[Python Runner] {fortran_exe} timed out after {TEST_TIMEOUT_SECONDS} s", file=sys.stderr)
+            test_returncode = 1
     finally:
         # 3. Clean teardown - guaranteed to run even if subprocess crashes or aborts
         stop_event.set()
