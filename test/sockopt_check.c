@@ -1,5 +1,16 @@
-#define _POSIX_C_SOURCE 200809L
-#define _DARWIN_C_SOURCE          /* macOS: keep TCP_KEEPALIVE visible */
+/* Same feature-test macros as src/sockets.c (before any include): request POSIX.1-2008 plus each
+   platform's TCP extensions (TCP_KEEPIDLE, SOCK_CLOEXEC, SO_NOSIGPIPE, ...),
+   which a strict -std=c11 build otherwise hides. Defining _POSIX_C_SOURCE
+   alone is not enough: on the BSDs it hides those extensions instead. */
+#if defined(__linux__)
+#define _DEFAULT_SOURCE           /* glibc/musl: POSIX.1-2008 + BSD/TCP extensions */
+#elif defined(__APPLE__)
+#define _DARWIN_C_SOURCE          /* macOS: everything, incl. SO_NOSIGPIPE */
+#elif defined(__NetBSD__)
+#define _NETBSD_SOURCE
+#elif !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__DragonFly__)
+#define _POSIX_C_SOURCE 200809L   /* other systems: at least POSIX.1-2008 */
+#endif                            /* FreeBSD, OpenBSD, DragonFly: all visible by default */
 
 #include <fcntl.h>
 #include <sys/socket.h>
