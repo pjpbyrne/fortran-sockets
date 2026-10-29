@@ -41,7 +41,7 @@ module tcpsockets
    ! C Bindings
    ! -------------------------------------------------------------------------
    interface
-      function tcp_connect(host, port, nodelay) bind(c, name="tcp_connect") result(sockfd)
+      function tcp_connect(host, port, nodelay) bind(c, name="f90sockets_connect") result(sockfd)
          import :: c_char, c_int
          implicit none
          character(kind=c_char), dimension(*), intent(in) :: host
@@ -50,14 +50,14 @@ module tcpsockets
          integer(c_int)                                   :: sockfd
       end function tcp_connect
 
-      function tcp_close(sockfd) bind(c, name="tcp_close") result(status)
+      function tcp_close(sockfd) bind(c, name="f90sockets_close") result(status)
          import :: c_int
          implicit none
          integer(c_int), value, intent(in) :: sockfd
          integer(c_int)                    :: status
       end function tcp_close
 
-      function tcp_send_array(sockfd, buf, len) bind(c, name="tcp_send") result(status)
+      function tcp_send_array(sockfd, buf, len) bind(c, name="f90sockets_send") result(status)
          import :: c_int, c_size_t
          implicit none
          integer(c_int), value, intent(in)    :: sockfd
@@ -66,7 +66,7 @@ module tcpsockets
          integer(c_int)                       :: status
       end function tcp_send_array
 
-      function tcp_send_scalar(sockfd, buf, len) bind(c, name="tcp_send") result(status)
+      function tcp_send_scalar(sockfd, buf, len) bind(c, name="f90sockets_send") result(status)
          import :: c_int, c_size_t
          implicit none
          integer(c_int), value, intent(in)    :: sockfd
@@ -75,7 +75,7 @@ module tcpsockets
          integer(c_int)                       :: status
       end function tcp_send_scalar
 
-      function tcp_recv_array(sockfd, buf, len) bind(c, name="tcp_recv") result(status)
+      function tcp_recv_array(sockfd, buf, len) bind(c, name="f90sockets_recv") result(status)
          import :: c_int, c_size_t
          implicit none
          integer(c_int), value, intent(in)    :: sockfd
@@ -84,7 +84,7 @@ module tcpsockets
          integer(c_int)                       :: status
       end function tcp_recv_array
 
-      function tcp_recv_scalar(sockfd, buf, len) bind(c, name="tcp_recv") result(status)
+      function tcp_recv_scalar(sockfd, buf, len) bind(c, name="f90sockets_recv") result(status)
          import :: c_int, c_size_t
          implicit none
          integer(c_int), value, intent(in)    :: sockfd
@@ -93,7 +93,7 @@ module tcpsockets
          integer(c_int)                       :: status
       end function tcp_recv_scalar
 
-      function tcp_send_chars(sockfd, buf, len) bind(c, name="tcp_send") result(status)
+      function tcp_send_chars(sockfd, buf, len) bind(c, name="f90sockets_send") result(status)
          import :: c_int, c_size_t, c_char
          implicit none
          integer(c_int), value, intent(in)                :: sockfd
@@ -102,7 +102,7 @@ module tcpsockets
          integer(c_int)                                   :: status
       end function tcp_send_chars
 
-      function tcp_recv_chars(sockfd, buf, len) bind(c, name="tcp_recv") result(status)
+      function tcp_recv_chars(sockfd, buf, len) bind(c, name="f90sockets_recv") result(status)
          import :: c_int, c_size_t, c_char
          implicit none
          integer(c_int), value, intent(in)     :: sockfd

@@ -75,7 +75,7 @@ static int configure_socket(int sockfd, int nodelay) {
  * @return      A connected socket descriptor (with TCP keepalive enabled, see
  *              KEEPALIVE_*) on success, or -1 on failure.
  */
-int tcp_connect(const char *host, int port, int nodelay) {
+int f90sockets_connect(const char *host, int port, int nodelay) {
     if (!host || port < 1 || port > 65535) {
         return -1;
     }
@@ -133,7 +133,7 @@ int tcp_connect(const char *host, int port, int nodelay) {
  * @param sockfd Socket file descriptor.
  * @return       0 on success, or -1 on error (with errno set).
  */
-int tcp_close(int sockfd) {
+int f90sockets_close(int sockfd) {
     if (sockfd < 0) {
         errno = EBADF;
         return -1;
@@ -153,7 +153,7 @@ int tcp_close(int sockfd) {
  * @param len    Number of bytes to send.
  * @return       0 on success (all len bytes sent), or -1 on error.
  */
-int tcp_send(int sockfd, const void *buf, size_t len) {
+int f90sockets_send(int sockfd, const void *buf, size_t len) {
     if (sockfd < 0 || (!buf && len > 0)) {
         errno = EINVAL;
         return -1;
@@ -196,7 +196,7 @@ int tcp_send(int sockfd, const void *buf, size_t len) {
  * @param len    Total number of bytes required.
  * @return       0 on success (all len bytes received), or -1 on error/premature EOF.
  */
-int tcp_recv(int sockfd, void *buf, size_t len) {
+int f90sockets_recv(int sockfd, void *buf, size_t len) {
     if (sockfd < 0 || (!buf && len > 0)) {
         errno = EINVAL;
         return -1;
