@@ -34,7 +34,17 @@ program main
 
     call close_socket(fd)
     write(*,*) 'closed socket'
-    
+
+    write(*,*) 'NAGLE ENABLED (nodelay=.false.)'
+    call open_socket(fd, port, host, nodelay=.false.)
+    str_recv = "wrong wrong"
+    call writebuffer(fd, str_send, 11)
+    call readbuffer(fd, str_recv, 11)
+    write(*,*) 'recv: ', str_recv
+    if (str_send /= str_recv) ERROR STOP 'Strings did not match with nodelay=.false.!'
+    call close_socket(fd)
+    write(*,*) 'closed socket'
+
 
 end program main
 

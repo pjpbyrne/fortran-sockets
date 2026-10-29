@@ -41,11 +41,12 @@ module tcpsockets
    ! C Bindings
    ! -------------------------------------------------------------------------
    interface
-      function tcp_connect(host, port) bind(c, name="tcp_connect") result(sockfd)
+      function tcp_connect(host, port, nodelay) bind(c, name="tcp_connect") result(sockfd)
          import :: c_char, c_int
          implicit none
          character(kind=c_char), dimension(*), intent(in) :: host
          integer(c_int), value, intent(in)                :: port
+         integer(c_int), value, intent(in)                :: nodelay
          integer(c_int)                                   :: sockfd
       end function tcp_connect
 
@@ -117,15 +118,26 @@ module tcpsockets
 
 contains
 
-   subroutine open_socket(sock, port, host)
+   ! nodelay (default .true.) disables Nagle's algorithm so small writes go out
+   ! immediately. Without it, a write-write-read exchange (e.g. a length prefix,
+   ! then a payload, then waiting for the reply) can stall ~40 ms per round trip
+   ! on delayed ACKs. Pass nodelay=.false. only when streaming many small writes
+   ! with no replies, where letting TCP coalesce them is faster.
+   subroutine open_socket(sock, port, host, nodelay)
       type(socket_handle), intent(inout) :: sock
       integer, intent(in)              :: port
       character(len=*), intent(in)     :: host
+      logical, intent(in), optional    :: nodelay
       character(kind=c_char, len=len_trim(host) + 1) :: c_host
+      integer(c_int) :: c_nodelay
 
       if (sock%fd >= 0) error stop "open_socket: Socket already open!"
+      c_nodelay = 1_c_int
+      if (present(nodelay)) then
+         if (.not. nodelay) c_nodelay = 0_c_int
+      end if
       c_host = trim(host) // c_null_char
-      sock%fd = tcp_connect(c_host, int(port, kind=c_int))
+      sock%fd = tcp_connect(c_host, int(port, kind=c_int), c_nodelay)
       if (sock%fd < 0) error stop "open_socket: Failed to open tcp connection."
    end subroutine open_socket
 

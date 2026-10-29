@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <netdb.h>
 #include <errno.h>
 
@@ -20,9 +21,12 @@
  *
  * @param host  Hostname or IP address (e.g., "example.com", "127.0.0.1", "::1").
  * @param port  Numeric port number (1-65535).
+ * @param nodelay  Non-zero to set TCP_NODELAY (disable Nagle's algorithm), so
+ *                 small writes are sent immediately instead of being held
+ *                 back until earlier data is acknowledged.
  * @return      A valid connected socket descriptor on success, or -1 on failure.
  */
-int tcp_connect(const char *host, int port) {
+int tcp_connect(const char *host, int port, int nodelay) {
     if (!host || port < 1 || port > 65535) {
         return -1;
     }
@@ -62,7 +66,10 @@ int tcp_connect(const char *host, int port) {
 #endif
 
         if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) == 0) {
-            break; /* Success */
+            int on = 1;
+            if (!nodelay || setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == 0) {
+                break; /* Success */
+            }
         }
 
         close(sockfd);

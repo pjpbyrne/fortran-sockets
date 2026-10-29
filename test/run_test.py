@@ -20,6 +20,9 @@ def run_echo_server(sock, stop_event):
 
         with conn:
             conn.settimeout(0.5)
+            # Echo each chunk immediately; with Nagle on, a second small echo
+            # would wait for the client's delayed ACK (several ms per exchange)
+            conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             while not stop_event.is_set():
                 try:
                     data = conn.recv(4096)

@@ -20,7 +20,16 @@ call close_socket(socket)
 
 A handle must be closed with `close_socket` before it is reused; calling `open_socket` on a handle that is still open stops the program.
 
-The file descriptors are wrapped in a simple type as they are of type c_int and there are no guarantees that fortran integers are big enough to hold them. 
+### Small writes and `nodelay`
+By default `open_socket` sets `TCP_NODELAY`, so every `writebuffer` call is sent immediately. This matters for request/response exchanges. Without it, TCP's Nagle algorithm holds back a second small write until the first is acknowledged. The peer, still waiting for the rest of the message, delays that acknowledgement, so a pattern such as *write length prefix, write payload, read reply* stalls for about 40 ms on every round trip.
+
+The cost is that each `writebuffer` call becomes its own packet. Sending many separate scalars is therefore slower than sending them as one array, so batch small values into arrays where you can. If a program only streams many small writes with no replies, it can let TCP coalesce them instead:
+
+```fortran
+call open_socket(socket, 8080, 'localhost', nodelay=.false.)
+```
+
+The peer's side matters too. If it replies with several small writes, it should also disable Nagle, or send each reply in one write.
 
 ## Wire format
 Values are sent as their raw in-memory bytes, with no length prefix or other framing:
