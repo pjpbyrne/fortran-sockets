@@ -4,7 +4,9 @@
 #
 # Run with cmake -P, passing -DBUILD_DIR -DSOURCE_DIR -DWORK_DIR -DCONFIG
 # -DGENERATOR -DFortran_COMPILER -DC_COMPILER -DFYPP_EXECUTABLE -DLIBDIR
-# -DINCLUDEDIR (the last two as CMAKE_INSTALL_LIBDIR/INCLUDEDIR).
+# -DINCLUDEDIR (the last two as CMAKE_INSTALL_LIBDIR/INCLUDEDIR), and the
+# library build's -DFortran_FLAGS -DC_FLAGS -DEXE_LINKER_FLAGS, which the
+# consumer must share (e.g. sanitizer builds).
 
 function(run)
     execute_process(COMMAND ${ARGN} RESULT_VARIABLE result OUTPUT_VARIABLE out ERROR_VARIABLE out)
@@ -52,7 +54,9 @@ if(modules)
 endif()
 message(STATUS "Install layout OK")
 
-set(compilers "-DCMAKE_Fortran_COMPILER=${Fortran_COMPILER}" "-DCMAKE_C_COMPILER=${C_COMPILER}")
+set(compilers "-DCMAKE_Fortran_COMPILER=${Fortran_COMPILER}" "-DCMAKE_C_COMPILER=${C_COMPILER}"
+    "-DCMAKE_Fortran_FLAGS=${Fortran_FLAGS}" "-DCMAKE_C_FLAGS=${C_FLAGS}"
+    "-DCMAKE_EXE_LINKER_FLAGS=${EXE_LINKER_FLAGS}")
 
 # 2. A downstream project using find_package
 set(build "${WORK_DIR}/package")
@@ -89,10 +93,11 @@ if(PKG_CONFIG)
     run("${PKG_CONFIG}" --libs f90sockets)
     string(STRIP "${run_output}" libs)
     separate_arguments(libs UNIX_COMMAND "${libs}")
+    separate_arguments(flags UNIX_COMMAND "${Fortran_FLAGS} ${EXE_LINKER_FLAGS}")
     set(build "${WORK_DIR}/pkgconfig")
     file(MAKE_DIRECTORY "${build}")
     execute_process(
-        COMMAND "${Fortran_COMPILER}" "${source}" "${SOURCE_DIR}/test/consumer/app.f90" ${libs} -o app
+        COMMAND "${Fortran_COMPILER}" ${flags} "${source}" "${SOURCE_DIR}/test/consumer/app.f90" ${libs} -o app
         WORKING_DIRECTORY "${build}" RESULT_VARIABLE result OUTPUT_VARIABLE out ERROR_VARIABLE out)
     if(NOT result EQUAL 0)
         message(FATAL_ERROR "pkg-config compile failed:\n${out}")
