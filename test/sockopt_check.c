@@ -31,7 +31,8 @@ static int get_int_opt(int fd, int level, int opt) {
 int f90sockets_test_check_sockopts(int fd, int expect_nodelay) {
     int failed = 0;
 
-    if ((get_int_opt(fd, IPPROTO_TCP, TCP_NODELAY) != 0) != (expect_nodelay != 0)) {
+    int nodelay = get_int_opt(fd, IPPROTO_TCP, TCP_NODELAY);
+    if (nodelay < 0 || (nodelay != 0) != (expect_nodelay != 0)) {   /* < 0: getsockopt failed */
         failed |= 1;
     }
     if (get_int_opt(fd, SOL_SOCKET, SO_KEEPALIVE) <= 0) {
