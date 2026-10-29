@@ -7,8 +7,13 @@ The sockets interface is generated using fypp for the standard fortran numeric t
 
 For your convenience, the generated code is given in the [preprocessed](preprocessed) folder, along with an example of how to use it. 
 
+## Building
+CMake builds the `f90sockets` static library. [fypp](https://github.com/aradi/fypp) is optional: if it is not installed (or does not run), the library is built from `preprocessed/tcpsockets.f90` instead of the template. To build only the library, without the tests or Python, pass `-DBUILD_TESTING=OFF`.
+
+The project can also be pulled into another CMake build with `add_subdirectory()` and linked against `f90sockets`; its tests are not registered in that case.
+
 ## Testing
-For testing, this requires python and cmake. To compile the test programs and run the full test suite:
+For testing, this requires python and cmake. Without fypp, the per-type tests (`unit_int32` to `unit_real64`) are skipped, and only `unit_string` and `combination` run. To compile the test programs and run the full test suite:
 
 ```
 cmake -B build
