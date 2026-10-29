@@ -7,6 +7,11 @@ The sockets interface is generated using fypp for the standard fortran numeric t
 
 For your convenience, the generated code is given in the [preprocessed](preprocessed) folder, along with an example of how to use it. 
 
+## Requirements
+- A POSIX system: Linux, macOS or a BSD. Windows is not supported.
+- A C11 compiler.
+- A Fortran compiler supporting the Fortran 2018 features the module uses, `implicit none (type, external)` and assumed-type `type(*)` arguments. It is tested with gfortran.
+
 ## Building
 CMake builds the `f90sockets` static library. [fypp](https://github.com/aradi/fypp) is optional: if it is not installed (or does not run), the library is built from `preprocessed/tcpsockets.f90` instead of the template. To build only the library, without the tests or Python, pass `-DBUILD_TESTING=OFF`.
 

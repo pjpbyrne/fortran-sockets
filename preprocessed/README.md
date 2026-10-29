@@ -6,7 +6,7 @@ This is the preprocessed source ready to be used directly in a project.
 This file contains the underlying c code that directly deals with reading and writing bytes to the streams. It also handles correctly opening and closing connections. 
 
 ## tcpsockets.f90
-This is are the interfaces that you should call from fortran. It contains a lot of routines, one for every flavour of basic type and also for arrays of those types (except arrays of strings. An example of using these would be
+These are the interfaces to call from Fortran: generic `writebuffer` and `readbuffer` routines for scalars and rank-1 arrays of `int32`, `int64`, `real32` and `real64`, and for strings (but not arrays of strings). For example:
 
 ```fortran
 type(socket_handle) :: socket
