@@ -18,6 +18,12 @@ program main
   real(REAL64), dimension(4) :: real_slice_recv, real_slice_send = 67
 
   real(REAL64), parameter :: real_slice_copied = 10, real_slice_not_copied = -5
+
+  ! Large enough (64 MB each way) to overflow the socket buffers, so the
+  ! write only completes if the peer reads while we are still writing
+  integer, parameter :: big_n = 8 * 1024 * 1024
+  real(REAL64), allocatable :: big_send(:), big_recv(:)
+  integer :: i
   
   port = get_port()
   
@@ -75,6 +81,17 @@ program main
   write(*,*) 
   
   
+  write(*,*) 'large strided transfer'
+  allocate(big_send(2 * big_n), big_recv(2 * big_n))
+  big_send = [(real(i, REAL64), i = 1, 2 * big_n)]
+  big_recv = real_slice_not_copied
+  call writebuffer(fd, big_send(1::2), big_n)
+  call readbuffer(fd, big_recv(2::2), big_n)
+  if (any(big_recv(2::2) /= big_send(1::2))) error stop 'Large strided transfer did not match'
+  if (any(big_recv(1::2) /= real_slice_not_copied)) error stop 'Large strided read wrote to wrong elements'
+  write(*,*) 'ok,', big_n, 'values each way'
+  write(*,*)
+
   call close_socket(fd)
   write(*,*) 'closed socket'
   

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import queue
 import socket
 import subprocess
 import sys
@@ -8,8 +9,38 @@ import threading
 # blocking until CTest's 1500 s default timeout
 TEST_TIMEOUT_SECONDS = 60
 
+def echo_connection(conn):
+    """Echo everything received on conn back to it until the client closes.
+
+    A reader thread drains the client continuously into a queue while this
+    thread writes it back with blocking sends. Because the server never stops
+    reading, a client that writes a large message before reading the echo
+    cannot deadlock against it, and no data is ever dropped.
+    """
+    chunks = queue.Queue()
+
+    def reader():
+        try:
+            while True:
+                data = conn.recv(1 << 20)
+                if not data:
+                    break
+                chunks.put(data)
+        except OSError:
+            pass
+        chunks.put(None)                  # end of stream
+
+    reader_thread = threading.Thread(target=reader, daemon=True)
+    reader_thread.start()
+    try:
+        while (data := chunks.get()) is not None:
+            conn.sendall(data)
+    except OSError:
+        pass
+    reader_thread.join()
+
 def run_echo_server(sock, stop_event):
-    sock.settimeout(0.5)
+    sock.settimeout(0.5)                  # only so the accept loop can see stop_event
     while not stop_event.is_set():
         try:
             conn, _ = sock.accept()
@@ -19,20 +50,11 @@ def run_echo_server(sock, stop_event):
             break
 
         with conn:
-            conn.settimeout(0.5)
+            conn.settimeout(None)         # blocking: a timeout here could drop data
             # Echo each chunk immediately; with Nagle on, a second small echo
             # would wait for the client's delayed ACK (several ms per exchange)
             conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            while not stop_event.is_set():
-                try:
-                    data = conn.recv(4096)
-                    if not data:
-                        break
-                    conn.sendall(data)
-                except socket.timeout:
-                    continue
-                except OSError:
-                    break
+            echo_connection(conn)
 
 def main():
     if len(sys.argv) < 2:
@@ -51,7 +73,7 @@ def main():
     print(f"[Python Runner] Echo server listening on {host}:{port}")
 
     stop_event = threading.Event()
-    server_thread = threading.Thread(target=run_echo_server, args=(server_sock, stop_event))
+    server_thread = threading.Thread(target=run_echo_server, args=(server_sock, stop_event), daemon=True)
     server_thread.start()
 
     try:
