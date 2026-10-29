@@ -7,7 +7,7 @@ module tcpsockets
    private
 
    public :: socket_handle
-   public :: open_socket, close_socket
+   public :: open_socket, close_socket, socket_is_open
    public :: writebuffer, readbuffer
 
    ! -------------------------------------------------------------------------
@@ -152,6 +152,14 @@ contains
       if (status /= 0) error stop "close_socket: Failed to close tcp connection."
       sock%fd   = -1_c_int
    end subroutine close_socket
+
+   ! True while the handle holds an open connection, i.e. between a successful
+   ! open_socket and the matching close_socket
+   logical function socket_is_open(sock)
+      type(socket_handle), intent(in) :: sock
+
+      socket_is_open = sock%fd >= 0
+   end function socket_is_open
 
    ! -------------------------------------------------------------------------
    ! String Routines

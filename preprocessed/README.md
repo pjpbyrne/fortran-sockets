@@ -18,7 +18,7 @@ call readbuffer(socket, return_data, 5)   ! reads exactly 5 bytes; rest blank-pa
 call close_socket(socket)
 ```
 
-A handle must be closed with `close_socket` before it is reused; calling `open_socket` on a handle that is still open stops the program.
+A handle must be closed with `close_socket` before it is reused; calling `open_socket` on a handle that is still open stops the program. Use `socket_is_open(socket)` to check whether a handle is currently open.
 
 ### Small writes and `nodelay`
 By default `open_socket` sets `TCP_NODELAY`, so every `writebuffer` call is sent immediately. This matters for request/response exchanges. Without it, TCP's Nagle algorithm holds back a second small write until the first is acknowledged. The peer, still waiting for the rest of the message, delays that acknowledgement, so a pattern such as *write length prefix, write payload, read reply* stalls for about 40 ms on every round trip.

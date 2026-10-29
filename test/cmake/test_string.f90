@@ -1,5 +1,5 @@
 program main
-    use tcpsockets, only : open_socket, close_socket, writebuffer, readbuffer, socket_handle
+    use tcpsockets, only : open_socket, close_socket, writebuffer, readbuffer, socket_handle, socket_is_open
     use arg_get_port, only: get_port
     use iso_fortran_env
 
@@ -10,8 +10,10 @@ program main
     character(len=11) :: str_recv, str_send = "hello world"
 
     port = get_port()
-    
+
+    if (socket_is_open(fd)) ERROR STOP 'New handle reported as open!'
     call open_socket(fd, port, host)
+    if (.not. socket_is_open(fd)) ERROR STOP 'Handle not reported as open after open_socket!'
     write(*,*) 'connected'
     write(*,*)
     
@@ -40,6 +42,7 @@ program main
     write(*,*)
 
     call close_socket(fd)
+    if (socket_is_open(fd)) ERROR STOP 'Handle still reported as open after close_socket!'
     write(*,*) 'closed socket'
 
     write(*,*) 'NAGLE ENABLED (nodelay=.false.)'
