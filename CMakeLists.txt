@@ -147,6 +147,26 @@ endif()
 
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
+# Install into a temporary prefix and build a downstream project against it
+# (find_package, add_subdirectory and pkg-config)
+if(F90SOCKETS_INSTALL)
+    add_test(
+        NAME install_and_consume
+        COMMAND "${CMAKE_COMMAND}"
+                "-DBUILD_DIR=${CMAKE_BINARY_DIR}"
+                "-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+                "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/install_consumer"
+                "-DCONFIG=$<CONFIG>"
+                "-DGENERATOR=${CMAKE_GENERATOR}"
+                "-DFortran_COMPILER=${CMAKE_Fortran_COMPILER}"
+                "-DC_COMPILER=${CMAKE_C_COMPILER}"
+                "-DFYPP_EXECUTABLE=${FYPP_EXECUTABLE}"
+                "-DLIBDIR=${CMAKE_INSTALL_LIBDIR}"
+                "-DINCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/test/install_consumer.cmake"
+    )
+endif()
+
 # preprocessed/ is what non-CMake users copy; make sure it matches src/
 add_test(NAME preprocessed_c_in_sync
     COMMAND ${CMAKE_COMMAND} -E compare_files
