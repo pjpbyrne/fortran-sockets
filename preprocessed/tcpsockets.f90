@@ -211,7 +211,7 @@ contains
       if (size(data) < n) error stop "writebuffer_int32_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_int32_array: Socket not open!"
 
-      status = tcp_send_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+      status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_int32_array: Failed sending"
    end subroutine writebuffer_int32_array
 
@@ -236,7 +236,7 @@ contains
       if (size(data) < n) error stop "readbuffer_int32_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_int32_array: Socket not open!"
 
-      status = tcp_recv_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+      status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_int32_array: Failed receiving"
    end subroutine readbuffer_int32_array
 
@@ -261,7 +261,7 @@ contains
       if (size(data) < n) error stop "writebuffer_int64_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_int64_array: Socket not open!"
 
-      status = tcp_send_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+      status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_int64_array: Failed sending"
    end subroutine writebuffer_int64_array
 
@@ -286,7 +286,7 @@ contains
       if (size(data) < n) error stop "readbuffer_int64_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_int64_array: Socket not open!"
 
-      status = tcp_recv_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+      status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_int64_array: Failed receiving"
    end subroutine readbuffer_int64_array
 
@@ -311,7 +311,7 @@ contains
       if (size(data) < n) error stop "writebuffer_real32_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_real32_array: Socket not open!"
 
-      status = tcp_send_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+      status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_real32_array: Failed sending"
    end subroutine writebuffer_real32_array
 
@@ -336,7 +336,7 @@ contains
       if (size(data) < n) error stop "readbuffer_real32_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_real32_array: Socket not open!"
 
-      status = tcp_recv_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+      status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_real32_array: Failed receiving"
    end subroutine readbuffer_real32_array
 
@@ -361,7 +361,7 @@ contains
       if (size(data) < n) error stop "writebuffer_real64_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_real64_array: Socket not open!"
 
-      status = tcp_send_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+      status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_real64_array: Failed sending"
    end subroutine writebuffer_real64_array
 
@@ -386,7 +386,7 @@ contains
       if (size(data) < n) error stop "readbuffer_real64_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_real64_array: Socket not open!"
 
-      status = tcp_recv_array(sock%fd, data, c_sizeof(data(1)) * int(n, kind=c_size_t))
+      status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_real64_array: Failed receiving"
    end subroutine readbuffer_real64_array
 
