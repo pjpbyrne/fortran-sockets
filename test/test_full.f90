@@ -97,6 +97,16 @@ program main
   write(*,*) 'ok,', big_n, 'values each way'
   write(*,*)
 
+  ! Contiguous arrays take the direct path (no copy buffer): write the whole
+  ! 128 MB array, read it back into a contiguous section of big_recv
+  write(*,*) 'large contiguous transfer'
+  big_recv = real_slice_not_copied
+  call writebuffer(fd, big_send, 2 * big_n)
+  call readbuffer(fd, big_recv, 2 * big_n)
+  if (any(big_recv /= big_send)) error stop 'Large contiguous transfer did not match'
+  write(*,*) 'ok,', 2 * big_n, 'values each way'
+  write(*,*)
+
   call close_socket(fd)
   write(*,*) 'closed socket'
   
