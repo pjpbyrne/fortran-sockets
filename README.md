@@ -72,42 +72,7 @@ Test project fortran-sockets/build
  1/21 Test  #1: install_and_consume ..............   Passed    1.43 sec
       Start  2: preprocessed_c_in_sync
  2/21 Test  #2: preprocessed_c_in_sync ...........   Passed    0.00 sec
-      Start  3: preprocessed_f90_in_sync
- 3/21 Test  #3: preprocessed_f90_in_sync .........   Passed    0.00 sec
-      Start  4: unit_int32
- 4/21 Test  #4: unit_int32 .......................   Passed    0.53 sec
-      Start  5: unit_int64
- 5/21 Test  #5: unit_int64 .......................   Passed    0.54 sec
-      Start  6: unit_real32
- 6/21 Test  #6: unit_real32 ......................   Passed    0.54 sec
-      Start  7: unit_real64
- 7/21 Test  #7: unit_real64 ......................   Passed    0.54 sec
-      Start  8: unit_string
- 8/21 Test  #8: unit_string ......................   Passed    0.54 sec
-      Start  9: combination
- 9/21 Test  #9: combination ......................   Passed    0.80 sec
-      Start 10: sockopts
-10/21 Test #10: sockopts .........................   Passed    0.05 sec
-      Start 11: wire_format
-11/21 Test #11: wire_format ......................   Passed    0.53 sec
-      Start 12: error_refused
-12/21 Test #12: error_refused ....................   Passed    0.10 sec
-      Start 13: error_send_to_closed
-13/21 Test #13: error_send_to_closed .............   Passed    0.54 sec
-      Start 14: error_recv_from_closed
-14/21 Test #14: error_recv_from_closed ...........   Passed    0.54 sec
-      Start 15: error_negative_n
-15/21 Test #15: error_negative_n .................   Passed    0.61 sec
-      Start 16: error_buffer_too_small
-16/21 Test #16: error_buffer_too_small ...........   Passed    0.60 sec
-      Start 17: error_string_too_small
-17/21 Test #17: error_string_too_small ...........   Passed    0.60 sec
-      Start 18: error_already_open
-18/21 Test #18: error_already_open ...............   Passed    0.60 sec
-      Start 19: error_close_unopened
-19/21 Test #19: error_close_unopened .............   Passed    0.54 sec
-      Start 20: error_write_unopened
-20/21 Test #20: error_write_unopened .............   Passed    0.55 sec
+...
       Start 21: cloexec
 21/21 Test #21: cloexec ..........................   Passed    0.54 sec
 
