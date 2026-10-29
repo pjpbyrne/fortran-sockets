@@ -18,4 +18,6 @@ call readbuffer(socket, return_data, 5)   ! reads exactly 5 bytes; rest blank-pa
 call close_socket(socket)
 ```
 
+A handle must be closed with `close_socket` before it is reused; calling `open_socket` on a handle that is still open stops the program.
+
 The file descriptors are wrapped in a simple type as they are of type c_int and there are no guarantees that fortran integers are big enough to hold them. 

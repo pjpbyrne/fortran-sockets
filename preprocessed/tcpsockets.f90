@@ -118,11 +118,12 @@ module tcpsockets
 contains
 
    subroutine open_socket(sock, port, host)
-      type(socket_handle), intent(out) :: sock
+      type(socket_handle), intent(inout) :: sock
       integer, intent(in)              :: port
       character(len=*), intent(in)     :: host
       character(kind=c_char, len=len_trim(host) + 1) :: c_host
 
+      if (sock%fd >= 0) error stop "open_socket: Socket already open!"
       c_host = trim(host) // c_null_char
       sock%fd = tcp_connect(c_host, int(port, kind=c_int))
       if (sock%fd < 0) error stop "open_socket: Failed to open tcp connection."
