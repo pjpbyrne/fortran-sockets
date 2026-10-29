@@ -60,6 +60,13 @@ jobs:
             version: 13
             fypp: true
             cmake_args: -DCMAKE_Fortran_FLAGS=-fdefault-integer-8
+          # Shared libraries, including the installed library used by another project
+          - name: Linux / gfortran / shared libraries
+            os: ubuntu-latest
+            compiler: gcc
+            version: 13
+            fypp: true
+            cmake_args: -DBUILD_SHARED_LIBS=ON
     env:
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1   # make UBSan failures fail the test
     steps:
