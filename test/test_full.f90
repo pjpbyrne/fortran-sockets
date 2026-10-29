@@ -83,7 +83,11 @@ program main
   
   write(*,*) 'large strided transfer'
   allocate(big_send(2 * big_n), big_recv(2 * big_n))
-  big_send = [(real(i, REAL64), i = 1, 2 * big_n)]
+  ! A loop, not an array constructor: ifx builds a constructor this size as a
+  ! temporary on the stack, which overflows it
+  do i = 1, 2 * big_n
+     big_send(i) = real(i, REAL64)
+  end do
   big_recv = real_slice_not_copied
   call writebuffer(fd, big_send(1::2), big_n)
   call readbuffer(fd, big_recv(2::2), big_n)
