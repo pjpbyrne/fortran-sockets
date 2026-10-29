@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import queue
+import struct
 import socket
 import subprocess
 import sys
@@ -39,7 +40,31 @@ def echo_connection(conn):
         pass
     reader_thread.join()
 
-def run_echo_server(sock, stop_event):
+# --wire mode: the exact bytes test_wire.f90 must send, and the bytes the
+# server replies with. Native byte order ('='), standard sizes.
+WIRE_EXPECTED = (struct.pack("=i", 42) + struct.pack("=q", 9876543210)
+                 + struct.pack("=f", 1.5) + struct.pack("=d", -2.25)
+                 + b"abc" + struct.pack("=3i", 1, 2, 3))
+WIRE_REPLY = (struct.pack("=i", -7) + struct.pack("=q", 2**40)
+              + struct.pack("=d", 0.125) + b"xyz")
+wire_mismatch = threading.Event()
+
+def wire_connection(conn):
+    """Check that the client sent exactly WIRE_EXPECTED, then send WIRE_REPLY."""
+    received = b""
+    while len(received) < len(WIRE_EXPECTED):
+        data = conn.recv(len(WIRE_EXPECTED) - len(received))
+        if not data:
+            break
+        received += data
+    if received != WIRE_EXPECTED:
+        print(f"[Python Runner] wire mismatch:\n  expected {WIRE_EXPECTED.hex()}\n  received {received.hex()}",
+              file=sys.stderr)
+        wire_mismatch.set()
+        return                            # closing makes the client's read fail
+    conn.sendall(WIRE_REPLY)
+
+def run_echo_server(sock, stop_event, handler):
     sock.settimeout(0.5)                  # only so the accept loop can see stop_event
     while not stop_event.is_set():
         try:
@@ -54,14 +79,19 @@ def run_echo_server(sock, stop_event):
             # Echo each chunk immediately; with Nagle on, a second small echo
             # would wait for the client's delayed ACK (several ms per exchange)
             conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            echo_connection(conn)
+            handler(conn)
 
 def main():
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <path_to_fortran_test_exe>", file=sys.stderr)
+    args = sys.argv[1:]
+    wire = bool(args) and args[0] == "--wire"
+    if wire:
+        args = args[1:]
+    if len(args) < 1:
+        print(f"Usage: {sys.argv[0]} [--wire] <path_to_fortran_test_exe>", file=sys.stderr)
         sys.exit(1)
 
-    fortran_exe = sys.argv[1]
+    fortran_exe = args[0]
+    handler = wire_connection if wire else echo_connection
 
     # 1. Bind to port 0 to let OS select an available ephemeral port
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -73,7 +103,7 @@ def main():
     print(f"[Python Runner] Echo server listening on {host}:{port}")
 
     stop_event = threading.Event()
-    server_thread = threading.Thread(target=run_echo_server, args=(server_sock, stop_event), daemon=True)
+    server_thread = threading.Thread(target=run_echo_server, args=(server_sock, stop_event, handler), daemon=True)
     server_thread.start()
 
     try:
@@ -97,6 +127,8 @@ def main():
         server_thread.join(timeout=2.0)
         print("[Python Runner] Echo server stopped.")
 
+    if wire_mismatch.is_set() and test_returncode == 0:
+        test_returncode = 1
     sys.exit(test_returncode)
 
 if __name__ == "__main__":

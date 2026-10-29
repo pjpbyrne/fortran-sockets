@@ -184,3 +184,18 @@ add_test(
             "${CMAKE_CURRENT_SOURCE_DIR}/test/run_test.py"
             "$<TARGET_FILE:test_sockopts>"
 )
+
+# Checks the exact bytes on the wire against what the --wire server expects
+add_executable(test_wire
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/test_wire.f90"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/arg_get_port.f90"
+)
+target_link_libraries(test_wire PRIVATE f90sockets)
+
+add_test(
+    NAME "wire_format"
+    COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/test/run_test.py"
+            --wire
+            "$<TARGET_FILE:test_wire>"
+)
