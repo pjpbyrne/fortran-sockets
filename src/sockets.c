@@ -37,6 +37,13 @@
 #define KEEPALIVE_INTERVAL_S 15
 #define KEEPALIVE_COUNT      4
 
+/* Largest byte count passed to a single send()/recv(). Linux shortens large
+   calls itself, but macOS rejects lengths above INT_MAX with EINVAL, so
+   transfers of 2 GiB or more are split into chunks of at most this size. */
+#ifndef F90SOCKETS_MAX_CHUNK
+#define F90SOCKETS_MAX_CHUNK ((size_t)1 << 30)
+#endif
+
 /**
  * Applies per-connection socket options after a successful connect.
  *
@@ -229,7 +236,11 @@ int f90sockets_send(int sockfd, const void *buf, size_t len) {
     while (total_sent < len) {
         /* MSG_NOSIGNAL suppresses SIGPIPE if peer closed the connection;
            send() returns -1 with errno = EPIPE instead. */
-        ssize_t bytes_sent = send(sockfd, ptr + total_sent, len - total_sent, MSG_NOSIGNAL);
+        size_t chunk = len - total_sent;
+        if (chunk > F90SOCKETS_MAX_CHUNK) {
+            chunk = F90SOCKETS_MAX_CHUNK;
+        }
+        ssize_t bytes_sent = send(sockfd, ptr + total_sent, chunk, MSG_NOSIGNAL);
 
         if (bytes_sent < 0) {
             if (errno == EINTR) {
@@ -270,7 +281,11 @@ int f90sockets_recv(int sockfd, void *buf, size_t len) {
     size_t total_read = 0;
 
     while (total_read < len) {
-        ssize_t n = recv(sockfd, ptr + total_read, len - total_read, 0);
+        size_t chunk = len - total_read;
+        if (chunk > F90SOCKETS_MAX_CHUNK) {
+            chunk = F90SOCKETS_MAX_CHUNK;
+        }
+        ssize_t n = recv(sockfd, ptr + total_read, chunk, 0);
 
         if (n < 0) {
             if (errno == EINTR) {
