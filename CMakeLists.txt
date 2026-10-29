@@ -199,3 +199,41 @@ add_test(
             --wire
             "$<TARGET_FILE:test_wire>"
 )
+
+# Failure paths: each scenario must stop with the given library error message
+add_executable(test_errors
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/test_errors.f90"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/arg_get_port.f90"
+)
+target_link_libraries(test_errors PRIVATE f90sockets)
+
+# scenario | run_test.py server mode ("-" = echo) | expected message
+set(ERROR_SCENARIOS
+    "refused|--no-listen|open_socket: Failed to open tcp connection"
+    "send_to_closed|--close|writebuffer_real64_array: Failed sending"
+    "recv_from_closed|--close|readbuffer_real64_array: Failed receiving"
+    "negative_n|-|writebuffer_real64_array: Negative sized transfer"
+    "buffer_too_small|-|readbuffer_real64_array: Buffer too small"
+    "string_too_small|-|writebuffer_string: Buffer too small"
+    "already_open|-|open_socket: Socket already open"
+    "close_unopened|-|close_socket: Tried to close tcp socket that was not open"
+    "write_unopened|-|writebuffer_real64_array: Socket not open"
+)
+foreach(entry IN LISTS ERROR_SCENARIOS)
+    string(REPLACE "|" ";" fields "${entry}")
+    list(GET fields 0 scenario)
+    list(GET fields 1 mode)
+    list(GET fields 2 message)
+    if(mode STREQUAL "-")
+        set(mode "")
+    endif()
+    add_test(
+        NAME "error_${scenario}"
+        COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/test/run_test.py"
+                ${mode}
+                "$<TARGET_FILE:test_errors>"
+                "${scenario}"
+    )
+    set_tests_properties("error_${scenario}" PROPERTIES PASS_REGULAR_EXPRESSION "${message}")
+endforeach()

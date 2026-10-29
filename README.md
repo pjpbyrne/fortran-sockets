@@ -32,10 +32,46 @@ You should see output similar to:
 ```
 Running tests...
 Test project fortran-sockets/build
+      Start  1: preprocessed_c_in_sync
+ 1/19 Test  #1: preprocessed_c_in_sync ...........   Passed    0.01 sec
+      Start  2: preprocessed_f90_in_sync
+ 2/19 Test  #2: preprocessed_f90_in_sync .........   Passed    0.01 sec
+      Start  3: unit_int32
+ 3/19 Test  #3: unit_int32 .......................   Passed    0.54 sec
+      Start  4: unit_int64
+ 4/19 Test  #4: unit_int64 .......................   Passed    0.54 sec
+      Start  5: unit_real32
+ 5/19 Test  #5: unit_real32 ......................   Passed    0.54 sec
+      Start  6: unit_real64
+ 6/19 Test  #6: unit_real64 ......................   Passed    0.53 sec
+      Start  7: unit_string
+ 7/19 Test  #7: unit_string ......................   Passed    0.55 sec
+      Start  8: combination
+ 8/19 Test  #8: combination ......................   Passed    0.67 sec
+      Start  9: sockopts
+ 9/19 Test  #9: sockopts .........................   Passed    0.03 sec
       Start 10: wire_format
-10/10 Test #10: wire_format ......................   Passed    0.53 sec
+10/19 Test #10: wire_format ......................   Passed    0.53 sec
+      Start 11: error_refused
+11/19 Test #11: error_refused ....................   Passed    0.09 sec
+      Start 12: error_send_to_closed
+12/19 Test #12: error_send_to_closed .............   Passed    0.53 sec
+      Start 13: error_recv_from_closed
+13/19 Test #13: error_recv_from_closed ...........   Passed    0.54 sec
+      Start 14: error_negative_n
+14/19 Test #14: error_negative_n .................   Passed    0.60 sec
+      Start 15: error_buffer_too_small
+15/19 Test #15: error_buffer_too_small ...........   Passed    0.60 sec
+      Start 16: error_string_too_small
+16/19 Test #16: error_string_too_small ...........   Passed    0.59 sec
+      Start 17: error_already_open
+17/19 Test #17: error_already_open ...............   Passed    0.60 sec
+      Start 18: error_close_unopened
+18/19 Test #18: error_close_unopened .............   Passed    0.54 sec
+      Start 19: error_write_unopened
+19/19 Test #19: error_write_unopened .............   Passed    0.54 sec
 
-100% tests passed, 0 tests failed out of 10
+100% tests passed, 0 tests failed out of 19
 
-Total Test time (real) =   4.11 sec
+Total Test time (real) =   8.61 sec
 ```
