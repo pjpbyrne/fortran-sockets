@@ -34,6 +34,13 @@ program main
     if (str_recv /= "hello" .or. str_recv(6:) /= repeat(' ', 6)) ERROR STOP 'Partial string not blank-padded!'
     write(*,*)
 
+    write(*,*) 'INT64 COUNT'
+    str_recv = "wrong wrong"
+    call writebuffer(fd, str_send, 11_int64)
+    call readbuffer(fd, str_recv, 11_int64)
+    if (str_send /= str_recv) ERROR STOP 'Strings did not match with an int64 count!'
+    write(*,*)
+
     write(*,*) 'EMPTY STRING'
     str_recv = "wrong wrong"
     call readbuffer(fd, str_recv, 0)

@@ -15,6 +15,7 @@ module tcpsockets
    ! -------------------------------------------------------------------------
    interface writebuffer
       module procedure :: writebuffer_string
+      module procedure :: writebuffer_string_n64
       module procedure :: writebuffer_int32_scalar
       module procedure :: writebuffer_int32_array
       module procedure :: writebuffer_int32_array_n64
@@ -31,6 +32,7 @@ module tcpsockets
 
    interface readbuffer
       module procedure :: readbuffer_string
+      module procedure :: readbuffer_string_n64
       module procedure :: readbuffer_int32_scalar
       module procedure :: readbuffer_int32_array
       module procedure :: readbuffer_int32_array_n64
@@ -172,25 +174,43 @@ contains
    ! -------------------------------------------------------------------------
    ! String Routines
    ! -------------------------------------------------------------------------
+   ! Like the array routines, n may be int32 or int64; the int32 versions
+   ! forward to the int64 ones.
    subroutine writebuffer_string(sock, fstring, n)
       type(socket_handle), intent(in) :: sock
       character(kind=c_char, len=*), intent(in)  :: fstring
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+
+      call writebuffer_string_n64(sock, fstring, int(n, kind=int64))
+   end subroutine writebuffer_string
+
+   subroutine writebuffer_string_n64(sock, fstring, n)
+      type(socket_handle), intent(in) :: sock
+      character(kind=c_char, len=*), intent(in)  :: fstring
+      integer(int64), intent(in)      :: n
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "writebuffer_string: Negative sized transfer"
-      if (len(fstring) < n) error stop "writebuffer_string: Buffer too small"
+      if (len(fstring, kind=int64) < n) error stop "writebuffer_string: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_string: Socket not open!"
 
       status = tcp_send_chars(sock%fd, fstring, int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_string: Failed sending"
-   end subroutine writebuffer_string
+   end subroutine writebuffer_string_n64
 
    subroutine readbuffer_string(sock, fstring, n)
       type(socket_handle), intent(in) :: sock
       character(kind=c_char, len=*), intent(out) :: fstring
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+
+      call readbuffer_string_n64(sock, fstring, int(n, kind=int64))
+   end subroutine readbuffer_string
+
+   subroutine readbuffer_string_n64(sock, fstring, n)
+      type(socket_handle), intent(in) :: sock
+      character(kind=c_char, len=*), intent(out) :: fstring
+      integer(int64), intent(in)      :: n
       integer :: status
 
       if (n == 0) then
@@ -198,13 +218,13 @@ contains
          return
       end if
       if (n < 0) error stop "readbuffer_string: Negative sized transfer"
-      if (n > len(fstring)) error stop "readbuffer_string: Buffer too small"
+      if (n > len(fstring, kind=int64)) error stop "readbuffer_string: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_string: Socket not open!"
 
       status = tcp_recv_chars(sock%fd, fstring, int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_string: Failed receiving"
-      if (n < len(fstring)) fstring(n + 1:) = ' '
-   end subroutine readbuffer_string
+      if (n < len(fstring, kind=int64)) fstring(n + 1:) = ' '
+   end subroutine readbuffer_string_n64
 
    ! -------------------------------------------------------------------------
    ! Fypp-Generated Typed Routines
