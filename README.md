@@ -26,23 +26,25 @@ You should see output similar to:
 Running tests...
 Test project fortran-sockets/build
     Start 1: preprocessed_c_in_sync
-1/8 Test #1: preprocessed_c_in_sync ...........   Passed    0.00 sec
+1/9 Test #1: preprocessed_c_in_sync ...........   Passed    0.00 sec
     Start 2: preprocessed_f90_in_sync
-2/8 Test #2: preprocessed_f90_in_sync .........   Passed    0.00 sec
+2/9 Test #2: preprocessed_f90_in_sync .........   Passed    0.01 sec
     Start 3: unit_int32
-3/8 Test #3: unit_int32 .......................   Passed    0.53 sec
+3/9 Test #3: unit_int32 .......................   Passed    0.54 sec
     Start 4: unit_int64
-4/8 Test #4: unit_int64 .......................   Passed    0.54 sec
+4/9 Test #4: unit_int64 .......................   Passed    0.54 sec
     Start 5: unit_real32
-5/8 Test #5: unit_real32 ......................   Passed    0.54 sec
+5/9 Test #5: unit_real32 ......................   Passed    0.54 sec
     Start 6: unit_real64
-6/8 Test #6: unit_real64 ......................   Passed    0.54 sec
+6/9 Test #6: unit_real64 ......................   Passed    0.53 sec
     Start 7: unit_string
-7/8 Test #7: unit_string ......................   Passed    0.54 sec
+7/9 Test #7: unit_string ......................   Passed    0.53 sec
     Start 8: combination
-8/8 Test #8: combination ......................   Passed    0.53 sec
+8/9 Test #8: combination ......................   Passed    0.54 sec
+    Start 9: sockopts
+9/9 Test #9: sockopts .........................   Passed    0.54 sec
 
-100% tests passed, 0 tests failed out of 8
+100% tests passed, 0 tests failed out of 9
 
-Total Test time (real) =   3.22 sec
+Total Test time (real) =   3.78 sec
 ```

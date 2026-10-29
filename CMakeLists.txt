@@ -169,3 +169,18 @@ add_test(
             "${CMAKE_CURRENT_SOURCE_DIR}/test/run_test.py"
             "$<TARGET_FILE:test_full>"
 )
+
+# Checks that connections really get TCP_NODELAY, keepalive and close-on-exec
+add_executable(test_sockopts
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/test_sockopts.f90"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/sockopt_check.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/arg_get_port.f90"
+)
+target_link_libraries(test_sockopts PRIVATE f90sockets)
+
+add_test(
+    NAME "sockopts"
+    COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/test/run_test.py"
+            "$<TARGET_FILE:test_sockopts>"
+)
