@@ -19,9 +19,10 @@ jobs:
             version: 13
             fypp: true
           - name: Linux / Intel ifx
-            # setup-fortran's Intel installer uses apt-key, which Ubuntu 24.04
-            # (ubuntu-latest) no longer ships
-            os: ubuntu-22.04
+            # setup-fortran v1.10.0's Intel installer uses apt-key, which was
+            # removed in Ubuntu 26.04 (now ubuntu-latest). Fixed on its main
+            # branch (#301) but not yet released; return to ubuntu-latest then.
+            os: ubuntu-24.04
             compiler: intel
             version: '2024.1'
             fypp: true
