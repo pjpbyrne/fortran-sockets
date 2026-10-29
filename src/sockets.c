@@ -11,6 +11,7 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <errno.h>
+#include <poll.h>
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0   /* e.g. macOS: SIGPIPE suppressed via SO_NOSIGPIPE instead */
@@ -65,6 +66,42 @@ static int configure_socket(int sockfd, int nodelay) {
 }
 
 /**
+ * connect() that survives signals: if interrupted (EINTR), the connection
+ * attempt continues in the background, so wait for it to finish and return
+ * its real result instead of abandoning the address.
+ *
+ * @return 0 if connected, or -1 on failure (with errno set).
+ */
+static int connect_retry(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+    if (connect(sockfd, addr, addrlen) == 0) {
+        return 0;
+    }
+    if (errno != EINTR) {
+        return -1;
+    }
+
+    struct pollfd pfd = { .fd = sockfd, .events = POLLOUT };
+    int ready;
+    do {
+        ready = poll(&pfd, 1, -1);   /* no timeout, like a blocking connect */
+    } while (ready == -1 && errno == EINTR);
+    if (ready == -1) {
+        return -1;
+    }
+
+    int err = 0;
+    socklen_t errlen = sizeof(err);
+    if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1) {
+        return -1;
+    }
+    if (err != 0) {
+        errno = err;
+        return -1;
+    }
+    return 0;
+}
+
+/**
  * Connects to a remote TCP host.
  *
  * @param host  Hostname or IP address (e.g., "example.com", "127.0.0.1", "::1").
@@ -114,7 +151,7 @@ int f90sockets_connect(const char *host, int port, int nodelay) {
         }
 #endif
 
-        if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) == 0
+        if (connect_retry(sockfd, rp->ai_addr, rp->ai_addrlen) == 0
             && configure_socket(sockfd, nodelay) == 0) {
             break; /* Success */
         }
