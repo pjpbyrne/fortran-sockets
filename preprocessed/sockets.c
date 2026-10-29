@@ -16,6 +16,54 @@
 #define MSG_NOSIGNAL 0   /* e.g. macOS: SIGPIPE suppressed via SO_NOSIGPIPE instead */
 #endif
 
+/* TCP keepalive, always enabled: after 15 s idle, probe every 15 s and fail the
+   connection after 4 unanswered probes, so a peer that vanished without closing
+   is detected ~75 s after the connection goes idle (OS default: ~2 h 11 min).
+   Probes are answered by the peer's kernel, so a busy peer is not affected. */
+#define KEEPALIVE_IDLE_S     15
+#define KEEPALIVE_INTERVAL_S 15
+#define KEEPALIVE_COUNT      4
+
+/**
+ * Applies per-connection socket options after a successful connect.
+ *
+ * @return 0 on success, or -1 if a required option could not be set.
+ */
+static int configure_socket(int sockfd, int nodelay) {
+    int on = 1;
+
+    if (nodelay && setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == -1) {
+        return -1;
+    }
+
+    if (setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on)) == -1) {
+        return -1;
+    }
+
+    /* Timing tweaks are best effort: if one is unavailable or fails, keepalive
+       stays on with the OS default timings, which is no reason to fail. */
+    int idle = KEEPALIVE_IDLE_S, interval = KEEPALIVE_INTERVAL_S, count = KEEPALIVE_COUNT;
+#if defined(TCP_KEEPIDLE)
+    (void)setsockopt(sockfd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
+#elif defined(TCP_KEEPALIVE)   /* macOS name for the idle time */
+    (void)setsockopt(sockfd, IPPROTO_TCP, TCP_KEEPALIVE, &idle, sizeof(idle));
+#else
+    (void)idle;
+#endif
+#ifdef TCP_KEEPINTVL
+    (void)setsockopt(sockfd, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval));
+#else
+    (void)interval;
+#endif
+#ifdef TCP_KEEPCNT
+    (void)setsockopt(sockfd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count));
+#else
+    (void)count;
+#endif
+
+    return 0;
+}
+
 /**
  * Connects to a remote TCP host.
  *
@@ -24,7 +72,8 @@
  * @param nodelay  Non-zero to set TCP_NODELAY (disable Nagle's algorithm), so
  *                 small writes are sent immediately instead of being held
  *                 back until earlier data is acknowledged.
- * @return      A valid connected socket descriptor on success, or -1 on failure.
+ * @return      A connected socket descriptor (with TCP keepalive enabled, see
+ *              KEEPALIVE_*) on success, or -1 on failure.
  */
 int tcp_connect(const char *host, int port, int nodelay) {
     if (!host || port < 1 || port > 65535) {
@@ -65,11 +114,9 @@ int tcp_connect(const char *host, int port, int nodelay) {
         }
 #endif
 
-        if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) == 0) {
-            int on = 1;
-            if (!nodelay || setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) == 0) {
-                break; /* Success */
-            }
+        if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) == 0
+            && configure_socket(sockfd, nodelay) == 0) {
+            break; /* Success */
         }
 
         close(sockfd);

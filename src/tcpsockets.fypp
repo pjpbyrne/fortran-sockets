@@ -121,6 +121,8 @@ contains
    ! then a payload, then waiting for the reply) can stall ~40 ms per round trip
    ! on delayed ACKs. Pass nodelay=.false. only when streaming many small writes
    ! with no replies, where letting TCP coalesce them is faster.
+   ! TCP keepalive is always enabled, so a peer that vanishes without closing
+   ! the connection is detected ~75 s after it goes idle (see sockets.c).
    subroutine open_socket(sock, port, host, nodelay)
       type(socket_handle), intent(inout) :: sock
       integer, intent(in)              :: port
