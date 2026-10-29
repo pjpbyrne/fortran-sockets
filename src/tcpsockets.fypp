@@ -24,6 +24,7 @@ module tcpsockets
 #:for name, _, _ in TYPES
       module procedure :: writebuffer_${name}$_scalar
       module procedure :: writebuffer_${name}$_array
+      module procedure :: writebuffer_${name}$_array_n64
 #:endfor
    end interface writebuffer
 
@@ -32,6 +33,7 @@ module tcpsockets
 #:for name, _, _ in TYPES
       module procedure :: readbuffer_${name}$_scalar
       module procedure :: readbuffer_${name}$_array
+      module procedure :: readbuffer_${name}$_array_n64
 #:endfor
    end interface readbuffer
 
@@ -210,20 +212,30 @@ contains
       if (status /= 0) error stop "writebuffer_${name}$_scalar: Failed sending"
    end subroutine writebuffer_${name}$_scalar
 
+   ! Array transfers take n as int32 (the usual default integer) or int64 (for
+   ! 2**31 or more elements); the int32 versions forward to the int64 ones.
    subroutine writebuffer_${name}$_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      ${type_kw}$(kind=${kind_val}$), intent(in) :: data(:)
+
+      call writebuffer_${name}$_array_n64(sock, data, int(n, kind=int64))
+   end subroutine writebuffer_${name}$_array
+
+   subroutine writebuffer_${name}$_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       ${type_kw}$(kind=${kind_val}$), intent(in) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "writebuffer_${name}$_array: Negative sized transfer"
-      if (size(data) < n) error stop "writebuffer_${name}$_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "writebuffer_${name}$_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_${name}$_array: Socket not open!"
 
       status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_${name}$_array: Failed sending"
-   end subroutine writebuffer_${name}$_array
+   end subroutine writebuffer_${name}$_array_n64
 
    subroutine readbuffer_${name}$_scalar(sock, data)
       type(socket_handle), intent(in) :: sock
@@ -237,18 +249,26 @@ contains
 
    subroutine readbuffer_${name}$_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      ${type_kw}$(kind=${kind_val}$), intent(inout) :: data(:)
+
+      call readbuffer_${name}$_array_n64(sock, data, int(n, kind=int64))
+   end subroutine readbuffer_${name}$_array
+
+   subroutine readbuffer_${name}$_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       ${type_kw}$(kind=${kind_val}$), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "readbuffer_${name}$_array: Negative sized transfer"
-      if (size(data) < n) error stop "readbuffer_${name}$_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "readbuffer_${name}$_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_${name}$_array: Socket not open!"
 
       status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_${name}$_array: Failed receiving"
-   end subroutine readbuffer_${name}$_array
+   end subroutine readbuffer_${name}$_array_n64
 
 #:endfor
 end module tcpsockets

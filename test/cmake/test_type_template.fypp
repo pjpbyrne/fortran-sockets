@@ -92,6 +92,19 @@ program test_${NAME}$
    end if
 
    ! -------------------------------------------------------------------------
+   ! 5. int64 element count (the variant for 2**31 or more elements)
+   ! -------------------------------------------------------------------------
+   arr_recv = val_not_copied
+
+   call writebuffer(fd, arr_send, int(5, int64))
+   call readbuffer(fd, arr_recv, int(5, int64))
+   write(*, '(A)') '  int64-count roundtrip completed'
+
+   if (any(arr_send /= arr_recv)) then
+      error stop 'test_${NAME}$: int64-count array mismatch!'
+   end if
+
+   ! -------------------------------------------------------------------------
    ! Clean teardown
    ! -------------------------------------------------------------------------
    call close_socket(fd)

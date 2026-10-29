@@ -17,24 +17,32 @@ module tcpsockets
       module procedure :: writebuffer_string
       module procedure :: writebuffer_int32_scalar
       module procedure :: writebuffer_int32_array
+      module procedure :: writebuffer_int32_array_n64
       module procedure :: writebuffer_int64_scalar
       module procedure :: writebuffer_int64_array
+      module procedure :: writebuffer_int64_array_n64
       module procedure :: writebuffer_real32_scalar
       module procedure :: writebuffer_real32_array
+      module procedure :: writebuffer_real32_array_n64
       module procedure :: writebuffer_real64_scalar
       module procedure :: writebuffer_real64_array
+      module procedure :: writebuffer_real64_array_n64
    end interface writebuffer
 
    interface readbuffer
       module procedure :: readbuffer_string
       module procedure :: readbuffer_int32_scalar
       module procedure :: readbuffer_int32_array
+      module procedure :: readbuffer_int32_array_n64
       module procedure :: readbuffer_int64_scalar
       module procedure :: readbuffer_int64_array
+      module procedure :: readbuffer_int64_array_n64
       module procedure :: readbuffer_real32_scalar
       module procedure :: readbuffer_real32_array
+      module procedure :: readbuffer_real32_array_n64
       module procedure :: readbuffer_real64_scalar
       module procedure :: readbuffer_real64_array
+      module procedure :: readbuffer_real64_array_n64
    end interface readbuffer
 
    ! -------------------------------------------------------------------------
@@ -211,20 +219,30 @@ contains
       if (status /= 0) error stop "writebuffer_int32_scalar: Failed sending"
    end subroutine writebuffer_int32_scalar
 
+   ! Array transfers take n as int32 (the usual default integer) or int64 (for
+   ! 2**31 or more elements); the int32 versions forward to the int64 ones.
    subroutine writebuffer_int32_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      integer(kind=int32), intent(in) :: data(:)
+
+      call writebuffer_int32_array_n64(sock, data, int(n, kind=int64))
+   end subroutine writebuffer_int32_array
+
+   subroutine writebuffer_int32_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       integer(kind=int32), intent(in) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "writebuffer_int32_array: Negative sized transfer"
-      if (size(data) < n) error stop "writebuffer_int32_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "writebuffer_int32_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_int32_array: Socket not open!"
 
       status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_int32_array: Failed sending"
-   end subroutine writebuffer_int32_array
+   end subroutine writebuffer_int32_array_n64
 
    subroutine readbuffer_int32_scalar(sock, data)
       type(socket_handle), intent(in) :: sock
@@ -238,18 +256,26 @@ contains
 
    subroutine readbuffer_int32_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      integer(kind=int32), intent(inout) :: data(:)
+
+      call readbuffer_int32_array_n64(sock, data, int(n, kind=int64))
+   end subroutine readbuffer_int32_array
+
+   subroutine readbuffer_int32_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       integer(kind=int32), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "readbuffer_int32_array: Negative sized transfer"
-      if (size(data) < n) error stop "readbuffer_int32_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "readbuffer_int32_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_int32_array: Socket not open!"
 
       status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_int32_array: Failed receiving"
-   end subroutine readbuffer_int32_array
+   end subroutine readbuffer_int32_array_n64
 
    subroutine writebuffer_int64_scalar(sock, data)
       type(socket_handle), intent(in) :: sock
@@ -261,20 +287,30 @@ contains
       if (status /= 0) error stop "writebuffer_int64_scalar: Failed sending"
    end subroutine writebuffer_int64_scalar
 
+   ! Array transfers take n as int32 (the usual default integer) or int64 (for
+   ! 2**31 or more elements); the int32 versions forward to the int64 ones.
    subroutine writebuffer_int64_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      integer(kind=int64), intent(in) :: data(:)
+
+      call writebuffer_int64_array_n64(sock, data, int(n, kind=int64))
+   end subroutine writebuffer_int64_array
+
+   subroutine writebuffer_int64_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       integer(kind=int64), intent(in) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "writebuffer_int64_array: Negative sized transfer"
-      if (size(data) < n) error stop "writebuffer_int64_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "writebuffer_int64_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_int64_array: Socket not open!"
 
       status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_int64_array: Failed sending"
-   end subroutine writebuffer_int64_array
+   end subroutine writebuffer_int64_array_n64
 
    subroutine readbuffer_int64_scalar(sock, data)
       type(socket_handle), intent(in) :: sock
@@ -288,18 +324,26 @@ contains
 
    subroutine readbuffer_int64_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      integer(kind=int64), intent(inout) :: data(:)
+
+      call readbuffer_int64_array_n64(sock, data, int(n, kind=int64))
+   end subroutine readbuffer_int64_array
+
+   subroutine readbuffer_int64_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       integer(kind=int64), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "readbuffer_int64_array: Negative sized transfer"
-      if (size(data) < n) error stop "readbuffer_int64_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "readbuffer_int64_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_int64_array: Socket not open!"
 
       status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_int64_array: Failed receiving"
-   end subroutine readbuffer_int64_array
+   end subroutine readbuffer_int64_array_n64
 
    subroutine writebuffer_real32_scalar(sock, data)
       type(socket_handle), intent(in) :: sock
@@ -311,20 +355,30 @@ contains
       if (status /= 0) error stop "writebuffer_real32_scalar: Failed sending"
    end subroutine writebuffer_real32_scalar
 
+   ! Array transfers take n as int32 (the usual default integer) or int64 (for
+   ! 2**31 or more elements); the int32 versions forward to the int64 ones.
    subroutine writebuffer_real32_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      real(kind=real32), intent(in) :: data(:)
+
+      call writebuffer_real32_array_n64(sock, data, int(n, kind=int64))
+   end subroutine writebuffer_real32_array
+
+   subroutine writebuffer_real32_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       real(kind=real32), intent(in) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "writebuffer_real32_array: Negative sized transfer"
-      if (size(data) < n) error stop "writebuffer_real32_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "writebuffer_real32_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_real32_array: Socket not open!"
 
       status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_real32_array: Failed sending"
-   end subroutine writebuffer_real32_array
+   end subroutine writebuffer_real32_array_n64
 
    subroutine readbuffer_real32_scalar(sock, data)
       type(socket_handle), intent(in) :: sock
@@ -338,18 +392,26 @@ contains
 
    subroutine readbuffer_real32_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      real(kind=real32), intent(inout) :: data(:)
+
+      call readbuffer_real32_array_n64(sock, data, int(n, kind=int64))
+   end subroutine readbuffer_real32_array
+
+   subroutine readbuffer_real32_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       real(kind=real32), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "readbuffer_real32_array: Negative sized transfer"
-      if (size(data) < n) error stop "readbuffer_real32_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "readbuffer_real32_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_real32_array: Socket not open!"
 
       status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_real32_array: Failed receiving"
-   end subroutine readbuffer_real32_array
+   end subroutine readbuffer_real32_array_n64
 
    subroutine writebuffer_real64_scalar(sock, data)
       type(socket_handle), intent(in) :: sock
@@ -361,20 +423,30 @@ contains
       if (status /= 0) error stop "writebuffer_real64_scalar: Failed sending"
    end subroutine writebuffer_real64_scalar
 
+   ! Array transfers take n as int32 (the usual default integer) or int64 (for
+   ! 2**31 or more elements); the int32 versions forward to the int64 ones.
    subroutine writebuffer_real64_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      real(kind=real64), intent(in) :: data(:)
+
+      call writebuffer_real64_array_n64(sock, data, int(n, kind=int64))
+   end subroutine writebuffer_real64_array
+
+   subroutine writebuffer_real64_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       real(kind=real64), intent(in) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "writebuffer_real64_array: Negative sized transfer"
-      if (size(data) < n) error stop "writebuffer_real64_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "writebuffer_real64_array: Buffer too small"
       if (sock%fd < 0) error stop "writebuffer_real64_array: Socket not open!"
 
       status = tcp_send_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "writebuffer_real64_array: Failed sending"
-   end subroutine writebuffer_real64_array
+   end subroutine writebuffer_real64_array_n64
 
    subroutine readbuffer_real64_scalar(sock, data)
       type(socket_handle), intent(in) :: sock
@@ -388,17 +460,25 @@ contains
 
    subroutine readbuffer_real64_array(sock, data, n)
       type(socket_handle), intent(in) :: sock
-      integer, intent(in)             :: n
+      integer(int32), intent(in)      :: n
+      real(kind=real64), intent(inout) :: data(:)
+
+      call readbuffer_real64_array_n64(sock, data, int(n, kind=int64))
+   end subroutine readbuffer_real64_array
+
+   subroutine readbuffer_real64_array_n64(sock, data, n)
+      type(socket_handle), intent(in) :: sock
+      integer(int64), intent(in)      :: n
       real(kind=real64), intent(inout) :: data(:)
       integer :: status
 
       if (n == 0) return
       if (n < 0) error stop "readbuffer_real64_array: Negative sized transfer"
-      if (size(data) < n) error stop "readbuffer_real64_array: Buffer too small"
+      if (size(data, kind=int64) < n) error stop "readbuffer_real64_array: Buffer too small"
       if (sock%fd < 0) error stop "readbuffer_real64_array: Socket not open!"
 
       status = tcp_recv_array(sock%fd, data(1:n), c_sizeof(data(1)) * int(n, kind=c_size_t))
       if (status /= 0) error stop "readbuffer_real64_array: Failed receiving"
-   end subroutine readbuffer_real64_array
+   end subroutine readbuffer_real64_array_n64
 
 end module tcpsockets

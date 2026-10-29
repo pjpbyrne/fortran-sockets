@@ -47,7 +47,7 @@ Values are sent as their raw in-memory bytes, with no length prefix or other fra
 - **Reals** are IEEE 754; **integers** are two's complement, with the exact width of their kind.
 - **Strings** are raw bytes with no terminator. `readbuffer` pads any unused part of the receiving string with blanks, not NULs.
 
-`readbuffer` blocks until exactly `n` values have arrived, so both ends must agree in advance on the order and size of every message.
+`readbuffer` blocks until exactly `n` values have arrived, so both ends must agree in advance on the order and size of every message. For arrays, `n` may be a default `integer` or an `integer(int64)`; use the latter for transfers of 2³¹ or more elements.
 
 ## Talking to Python
 Decode with explicit little-endian formats. Use `<` (or `=` for native), never `!`, which means big-endian network order:
