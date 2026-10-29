@@ -1,5 +1,7 @@
 # fortran-sockets
 
+[![CI](https://github.com/pjpbyrne/fortran-sockets/actions/workflows/ci.yml/badge.svg)](https://github.com/pjpbyrne/fortran-sockets/actions/workflows/ci.yml)
+
 This is an attempt to write a reasonable wrapper for a sockets interface in fortran.
 
 ## Structure
